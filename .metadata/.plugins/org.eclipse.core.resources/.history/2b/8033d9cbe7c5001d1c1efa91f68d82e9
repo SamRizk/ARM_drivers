@@ -1,0 +1,35 @@
+/*
+ * SCHED_CFG.c
+ *
+ *  Created on: Mar 18, 2023
+ *      Author: samir
+ */
+
+#include "SCHED/SCHED.h"
+
+
+
+const  taskInfo_t TaskInfo[MAX_SCHED_SIZE]= {
+                                                [APP1] = {
+                                                            .name = "APP1",
+                                                            .period = 5,
+                                                            .cbf = APP1_Runnable,
+                                                            .startDelay = 0,
+                                                         },
+
+                                                [APP2] = {
+                                                            .name = "APP2",
+                                                            .period = 10,
+                                                            .cbf = APP2_Runnable,
+                                                            .startDelay = 0,
+                                                         },
+
+                                                [APP2] = {
+                                                            .name = "APP3",
+                                                            .period = 15,
+                                                            .cbf = APP3_Runnable,
+                                                            .startDelay = 0,
+                                                         }
+
+                                            };
+

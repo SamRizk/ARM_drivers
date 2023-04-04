@@ -1,0 +1,54 @@
+
+#include "../include/MCLA/RCC/RCC.h"
+#include "../include/MCLA/GPIO/GPIO.h"
+
+#define  ADDR       (u32)0x40023800
+int
+main(void)
+{
+
+	 RCC_setHSESystemClock();
+	 RCC_enableAHB1Peripheral(Peripheral_GPIOA);
+	/* u32 val;
+	 	 GPIO_setPinVal(GPIO_PORTA,GPIO_PIN10);
+	 	 GPIO_setPinVal(GPIO_PORTA,GPIO_PIN11);
+	 	 GPIO_readPhysVal(GPIO_PORTA,GPIO_PIN10,&val);
+	 	 GPIO_resetPinVal(GPIO_PORTA,GPIO_PIN10);
+	 	 GPIO_setPinVal(GPIO_PORTA,GPIO_PIN10);
+	 	 GPIO_readPhysVal(GPIO_PORTA,GPIO_PIN10,&val);
+
+	 /*GPIO_CFG_t LED0;
+	 LED0.GPIO_Port = GPIO_PORTA;
+	 LED0.GPIO_Pin  = GPIO_PIN10;
+	 LED0.GPIO_Mode = GPIO_MODE_OUTPUT_OD_HS;
+	 LED0.GPIO_Pull = GPIO_PULL_NONE;
+	 LED0.GPIO_Speed = GPIO_SPEED_HIGH;
+	 LED0.GPIO_AF    = GPIO_AF_0;
+	 GPIO_init(&LED0);
+
+	 */
+
+// GPIO_setPinDir(GPIO_PORTA,GPIO_PIN15,GPIO_MODE_OUTPUT_OD_PD_HS);
+
+//	 GPIO_setOutMode(GPIO_PORTA,GPIO_PIN10,GPIO_MODE_OUTPUT_OD_PD_HS);
+
+//	 GPIO_setPinSpeed(GPIO_PORTA,GPIO_PIN10,GPIO_MODE_OUTPUT_OD_PD_HS);
+	// GPIO_setPinPull(GPIO_PORTA,GPIO_PIN10,GPIO_MODE_OUTPUT_OD_PD_HS);
+	 //GPIO_selectAF(GPIO_AF10_OTG_FS,GPIO_PIN12,GPIO_PORTA);
+	GPIO_setPortDir(GPIO_PORTA,GPIO_MODE_OUTPUT_OD_PD_HS);
+
+  while (1)
+    {
+       // Add your code here.
+    }
+}
+
+/*
+u32 SS =MEM_ADDR(BIT_BAND(ADDR,17));
+if (SS == 0)
+	SS = 1 ;
+MEM_ADDR(BIT_BAND(ADDR,16)) = 0x1;
+u32 ZZ = MEM_ADDR(BIT_BAND(ADDR,17));
+if(ZZ == 1)
+	ZZ = 0;
+u32 cc =RCC_getHSERDY();*/

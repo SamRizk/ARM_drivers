@@ -1,0 +1,23 @@
+
+#include "RCC/RCC.h"
+#include "LED.h"
+extern void APP1(void);
+extern void APP2(void);
+extern void APP3(void);
+
+int
+main(void)
+{
+	  RCC_setHSESystemClock();
+	  RCC_enableAHB1Peripheral(Peripheral_GPIOA);
+	  LED_init();
+	  APP1();
+	  APP2();
+	  APP3();
+  while (1)
+    {
+       // Add your code here.
+
+    }
+}
+

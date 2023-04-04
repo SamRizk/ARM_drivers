@@ -1,0 +1,16 @@
+/*
+ * LED_APP3.c
+ *
+ *  Created on: Mar 18, 2023
+ *      Author: samir
+ */
+
+#include "LED.h"
+
+extern void APP3(void);
+
+void APP3(void)
+{
+	LED_setState(LED_3,LED_STATUS_ON);
+
+}

@@ -1,0 +1,33 @@
+
+#include "RCC/RCC.h"
+#include "LED.h"
+#include "SWITCH.h"
+#include "CLOCK_H.h"
+int
+main(void)
+{
+	RCC_setHSEOn();
+	RCC_PLLConfigurationClock(CLOCK_HSE,PLLQ_CLOCK_DIVIED_BY_2,PLLM_DIVIED_CLOCK_BY_30,PLLN_CLOCK_MULTIP_BY_192,PLLP_DIVIED_CLOCK_BY_8);
+	RCC_setPLLSystemClock();
+	RCC_enableAHB1Peripheral(Peripheral_GPIOA);
+	RCC_enableAHB1Peripheral(Peripheral_GPIOC);
+	LED_init();
+	SWC_init();
+
+	u32 RES;
+	u32 clo;
+	clo = CLOCKH_getSystemClock_M();
+
+  while (1)
+    {
+	  SWC_getState(SWC_Alarm,&RES);
+	  if (RES == SWC_STATUS_PREESED)
+		  LED_setState(LED_4,LED_STATUS_ON);
+	  else
+		  LED_setState(LED_4,LED_STATUS_OFF);
+
+       // Add your code here.
+
+    }
+}
+

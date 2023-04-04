@@ -1,0 +1,46 @@
+/*
+ * CLOCK_H.c
+ *
+ *  Created on: Mar 13, 2023
+ *      Author: samir
+ */
+#include "Std_types.h"
+#include "Bit_math.h"
+
+#include "CLOCK_H.h"
+#include "RCC/RCC.h"
+
+
+
+
+u32 CLOCKH_getSystemClock_M(void)
+{
+	u32 LOC_clock =RCC_getSystemClocks();
+	s32 LOC_RESClock,LOC_VCOclock;
+	u32 LOC_RETClock;
+	u32 PLL_N;
+	u32 PLL_M;
+	u32 PLL_P;
+	u32 PLL_Source;
+
+	switch(LOC_clock)
+	{
+	case CLOCK_HSE:
+		LOC_RESClock = HSE_CL;
+		break;
+	case CLOCK_HSI:
+		LOC_RESClock = HSI_CL;
+		break;
+	case CLOCK_PLL:
+		PLL_Source = RCC_GETPLLSource();
+		PLL_N = RCC_GetFactor_N();
+		PLL_M = RCC_GetFactor_M();
+		PLL_P = RCC_GetFactor_P();
+		LOC_VCOclock = ((PLL_Source == CLOCK_HSE)?25:16) * (PLL_N/PLL_M);
+		LOC_RESClock = LOC_VCOclock/PLL_P;
+		break;
+
+	}
+	LOC_RETClock = LOC_RESClock / RCC_GETPrescaler();
+	return LOC_RETClock;
+}

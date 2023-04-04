@@ -1,0 +1,36 @@
+
+#include "RCC/RCC.h"
+#include "LED.h"
+#include "SWITCH.h"
+#include "SCHED/SCHED.h"
+//void Delay_ms(volatile int time_ms);
+
+int
+main(void)
+{
+	RCC_setHSESystemClock();
+	RCC_enableAHB1Peripheral(Peripheral_GPIOA);
+	RCC_enableAHB1Peripheral(Peripheral_GPIOC);
+	LED_init();
+	//SWC_init();
+	SCHED_init();
+	SCHED_start();
+
+
+//
+//  while (1)
+//    {
+//
+//       // Add your code here.
+//
+//
+//    }
+}
+
+
+//void Delay_ms(volatile int time_ms)
+//{
+//	    int j;
+//        for(j = 0; j < time_ms*4000; j++)
+//            {}  /* excute NOP for 1ms */
+//}

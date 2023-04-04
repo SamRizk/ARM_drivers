@@ -1,0 +1,14 @@
+/*
+ * LED_APP1.c
+ *
+ *  Created on: Mar 18, 2023
+ *      Author: samir
+ */
+#include "LED.h"
+
+
+
+void APP1(void)
+{
+	LED_setState(LED_1,LED_STATUS_ON);
+}

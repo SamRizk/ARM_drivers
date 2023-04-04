@@ -1,0 +1,186 @@
+/*
+ * SYSTICK.c
+ *
+ *  Created on: Mar 8, 2023
+ *      Author: samir
+ */
+
+
+/*====================================================================================================*/
+/******************************************** includes ************************************************/
+/*====================================================================================================*/
+#include "SYSTICK/SYSTICK.h"
+
+
+
+/******************************************** End of includes *****************************************/
+/*====================================================================================================*/
+
+
+
+/*====================================================================================================*/
+/********************************************* defines ************************************************/
+/*====================================================================================================*/
+#define SCS_BASE            (0xE000E000UL)                            /* System Control Space Base Address */
+#define SysTick_BASE        (SCS_BASE +  0x0010UL)                    /* SysTick Base Address */
+#define SysTick             ((SysTick_t   *)     SysTick_BASE  )    /* SysTick configuration struct */
+#define SysTick_LOAD_RELOAD_Msk            (0xFFFFFFUL)              /*SysTick LOAD: RELOAD Mask */
+
+#define SysTick_CTRL_CLKSOURCE_Pos          2                                     /* SysTick CTRL: CLKSOURCE Position */
+
+#define SysTick_CTRL_COUNTFLAG_Pos         16U                                     /* SysTick CTRL: COUNTFLAG Position */
+#define SysTick_CTRL_COUNTFLAG_Msk         (1UL << SysTick_CTRL_COUNTFLAG_Pos)     /* SysTick CTRL: COUNTFLAG Mask */
+
+#define SysTick_CTRL_TICKINT_Pos            1                                     /* SysTick CTRL: TICKINT Position */
+
+#define SysTick_CTRL_ENABLE_Msk            (0)                                      /* SysTick CTRL: ENABLE Mask */
+
+#define SysTick_VAL_CURRENT_Msk            (0xFFFFFFUL)                            /* SysTick VAL: CURRENT Mask */
+
+#define SysTick_INTI                       (0x00000004)
+
+
+#define  TICK_TIME_VALUE                    ((s64)((1/clockin_M)*1000000))
+/********************************************* End Of defines *****************************************/
+/*====================================================================================================*/
+
+
+/*====================================================================================================*/
+/********************************************** types *************************************************/
+/*====================================================================================================*/
+
+/************************ SYSTICK REG ***************************/
+typedef struct
+{
+  volatile u32 CTRL;                   /* Offset: 0x000 (R/W)  SysTick Control and Status Register */
+  volatile u32 LOAD;                   /* Offset: 0x004 (R/W)  SysTick Reload Value Register       */
+  volatile u32 VAL;                    /* Offset: 0x008 (R/W)  SysTick Current Value Register      */
+  volatile u32 CALIB;                  /* Offset: 0x00C (R/ )  SysTick Calibration Register        */
+} SysTick_t;
+
+void (*SysTick_CallPack) (void);
+/********************************************* End Of types *******************************************/
+/*====================================================================================================*/
+
+
+
+
+/*====================================================================================================*/
+/********************************************** variables *********************************************/
+/*====================================================================================================*/
+static u32 clockin_M;
+
+
+/********************************************** End variables *****************************************/
+/*====================================================================================================*/
+
+
+
+/*====================================================================================================*/
+/*************************************** Static Function Prototypes ***********************************/
+/*====================================================================================================*/
+SYSTICKErrorStatus_t SET_ms(u32 us);
+
+/***************************************** End Static Function ***************************************/
+/*====================================================================================================*/
+
+
+
+
+/*====================================================================================================*/
+/************************************* implementation of APIs *****************************************/
+/*====================================================================================================*/
+void SYSTICK_init(u32 clock)
+{
+    SysTick->CTRL = SysTick_INTI;
+    clockin_M = clock;
+
+}
+
+void SYSTICK_start(void)
+{
+
+    SET_BIT(SysTick->CTRL,SysTick_CTRL_ENABLE_Msk);     
+}
+
+void SYSTICK_stop(void)
+{
+    CLR_BIT(SysTick->CTRL,SysTick_CTRL_ENABLE_Msk); 
+    
+}
+
+SYSTICKErrorStatus_t SYSTICK_setCallBackFunc(void(*notifFunction)(void))
+{   
+    SYSTICKErrorStatus_t LOC_status = SYS_OK;
+    if(notifFunction != NULL)
+    {
+        SysTick_CallPack = notifFunction;
+    }
+    else
+    {
+        LOC_status = SYS_NullPointer;
+    }
+    return LOC_status;
+}
+
+void SYSTICK_enableINT(void)
+{
+    SET_BIT(SysTick->CTRL,SysTick_CTRL_TICKINT_Pos);
+}
+
+void SYSTICK_disableINT(void)
+{
+    CLR_BIT(SysTick->CTRL,SysTick_CTRL_TICKINT_Pos);
+
+}
+
+
+
+SYSTICKErrorStatus_t SYSTICK_setTick_us(s64 ticks)
+{
+    SYSTICKErrorStatus_t LOC_status = SYS_OK;
+    u32 LOC_RESULT = (ticks * TICK_TIME_VALUE );
+    if ((LOC_RESULT - 1UL) > SysTick_LOAD_RELOAD_Msk)
+    {
+      LOC_status = SYS_ParameterError; 
+    }
+    else
+    {
+        SysTick->LOAD = (u32)(LOC_RESULT - 1UL);
+        SysTick->VAL = 0UL;
+    }
+    return LOC_status;
+
+}
+
+SYSTICKErrorStatus_t SYSTICK_setTick_ms(u32 ticks)
+{   
+    SYSTICKErrorStatus_t LOC_status = SYS_OK;
+    LOC_status = SET_ms(ticks);
+    return LOC_status;
+}
+
+/****************************************** End Of APIs ***********************************************/
+/*====================================================================================================*/
+
+
+/*====================================================================================================*/
+/************************************* Static Function implementation *********************************/
+/*====================================================================================================*/
+void SysTick_Handler(void){
+
+	if(SysTick_CallPack != NULL)
+    {
+        SysTick_CallPack();
+    }
+}
+
+SYSTICKErrorStatus_t SET_ms(u32 us)
+{
+    SYSTICKErrorStatus_t LOC_status ;
+    LOC_status= SYSTICK_setTick_us(us*1000);
+    return LOC_status;
+}
+
+/************************************ End Static Function implementation ******************************/
+/*====================================================================================================*/

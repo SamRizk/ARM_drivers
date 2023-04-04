@@ -1,0 +1,16 @@
+
+#include "RCC/RCC.h"
+int
+main(void)
+{
+
+APP1();
+APP2();
+APP3();
+  while (1)
+    {
+       // Add your code here.
+
+    }
+}
+

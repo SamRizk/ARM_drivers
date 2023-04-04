@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Delete 3 resources" deleteContents="false" description="Delete 3 resources" element1="/Drivers/src/APP1.c" element2="/Drivers/src/APP2.c" element3="/Drivers/src/APP3.c" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="3" stamp="1679169875083"/>
+</session>

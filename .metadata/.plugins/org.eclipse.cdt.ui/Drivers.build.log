@@ -1,0 +1,25 @@
+02:34:43 **** Incremental Build of configuration Debug for project Drivers ****
+make all 
+'Building file: ../src/HAL/CHAT/CHAT.c'
+'Invoking: GNU Arm Cross C Compiler'
+arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -mfloat-abi=soft -Og -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -ffreestanding -fno-move-loop-invariants -Wall -Wextra  -g3 -DDEBUG -DUSE_FULL_ASSERT -DTRACE -DOS_USE_TRACE_SEMIHOSTING_DEBUG -DSTM32F401xC -DUSE_HAL_DRIVER -DHSE_VALUE=25000000 -I"../include/MCLA" -I"C:\ARM\stm32f401_workspace\Drivers\include\CFG" -I"../include" -I"../include/HAL" -I"../include/LIB" -I"../system/include" -I"../system/include/cmsis" -I"../system/include/stm32f4-hal" -std=gnu11 -MMD -MP -MF"src/HAL/CHAT/CHAT.d" -MT"src/HAL/CHAT/CHAT.o" -c -o "src/HAL/CHAT/CHAT.o" "../src/HAL/CHAT/CHAT.c"
+'Finished building: ../src/HAL/CHAT/CHAT.c'
+' '
+'Building target: Drivers.elf'
+'Invoking: GNU Arm Cross C++ Linker'
+arm-none-eabi-g++ -mcpu=cortex-m4 -mthumb -mfloat-abi=soft -Og -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -ffreestanding -fno-move-loop-invariants -Wall -Wextra  -g3 -T mem.ld -T libs.ld -T sections.ld -nostartfiles -Xlinker --gc-sections -L"../ldscripts" -Wl,-Map,"Drivers.map" --specs=nano.specs -o "Drivers.elf" ./system/src/newlib/_cxx.o ./system/src/newlib/_exit.o ./system/src/newlib/_sbrk.o ./system/src/newlib/_startup.o ./system/src/newlib/_syscalls.o ./system/src/newlib/assert.o  ./system/src/diag/Trace.o ./system/src/diag/trace_impl.o  ./system/src/cortexm/_initialize_hardware.o ./system/src/cortexm/_reset_hardware.o ./system/src/cortexm/exception_handlers.o  ./system/src/cmsis/system_stm32f4xx.o ./system/src/cmsis/vectors_stm32f401xc.o  ./src/SCHED/SCHED.o ./src/SCHED/SCHED_CFG.o  ./src/MCLA/UART/UART.o  ./src/MCLA/SYSTICK/SYSTICK.o  ./src/MCLA/RCC/RCC.o  ./src/MCLA/GPIO/GPIO.o  ./src/MCLA/DMA/DMA.o  ./src/HAL/SWITCH/SWITCH.o ./src/HAL/SWITCH/SWITCH_cfg.o  ./src/HAL/LED/LED.o ./src/HAL/LED/LED_cfg.o  ./src/HAL/LCD/LCD.o ./src/HAL/LCD/LCD_cfg.o  ./src/HAL/ClockHandler/CLOCK_H.o  ./src/HAL/CHAT/CHAT.o ./src/HAL/CHAT/CHAT_CFG.o  ./src/APP.o ./src/main.o   
+'Finished building target: Drivers.elf'
+' '
+'Invoking: GNU Arm Cross Create Flash Image'
+arm-none-eabi-objcopy -O ihex "Drivers.elf"  "Drivers.hex"
+'Finished building: Drivers.hex'
+' '
+'Invoking: GNU Arm Cross Print Size'
+arm-none-eabi-size --format=berkeley "Drivers.elf"
+   text	   data	    bss	    dec	    hex	filename
+   8135	    160	    560	   8855	   2297	Drivers.elf
+'Finished building: Drivers.siz'
+' '
+
+02:34:45 Build Finished (took 2s.104ms)
+

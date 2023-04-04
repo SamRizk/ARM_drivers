@@ -1,0 +1,26 @@
+
+#include "RCC/RCC.h"
+#include "LED.h"
+#include "SWITCH.h"
+int
+main(void)
+{
+	RCC_setHSESystemClock();
+	RCC_enableAHB1Peripheral(Peripheral_GPIOA);
+	RCC_enableAHB1Peripheral(Peripheral_GPIOC);
+	LED_init();
+	SWC_init();
+
+	u32 RES;
+
+  while (1)
+    {
+	  SWC_getState(SWC_Alarm,&RES);
+	  if (RES == SWC_STATUS_PREESED)
+	  LED_setState(LED_4,LED_STATUS_ON);
+
+       // Add your code here.
+
+    }
+}
+

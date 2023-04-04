@@ -1,0 +1,43 @@
+#include <stdint.h>
+
+__attribute__ ((section(".Sam_Section"),used))
+uint32_t myVarNotInit ;
+
+uint32_t myVarInit = 100;
+
+volatile uint32_t myvolatil =1066;
+
+const uint32_t myVarConst = 100;
+
+static uint32_t mystaticGloVar = 50;
+
+extern void print_var(const uint32_t* var);
+
+
+int
+SAM(int argc, char* argv[])
+{
+	static uint32_t local_a;
+	static uint32_t local_b=90;
+	static const uint32_t local_c= 900;
+  while (1)
+    {
+	  print_var(&myVarConst);
+	  		print_var(&local_c);
+	  		mystaticGloVar++;
+
+	  		myVarInit++;
+	  		myVarNotInit++;
+	  		local_a++;
+	  		local_b++;
+	  		if(myVarInit >= myVarConst || myVarNotInit >= myVarConst){
+	  			myVarInit = 0;
+	  			myVarNotInit = 0;
+	  		}
+
+	  		if(local_a >= local_c || local_b>= local_c){
+	  			local_a = 0;
+	  			local_b = 0;
+	  		}
+    }
+}

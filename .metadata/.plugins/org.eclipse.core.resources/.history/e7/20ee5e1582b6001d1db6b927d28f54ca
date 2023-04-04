@@ -1,0 +1,21 @@
+#include <stdint.h>
+
+uint32_t myVarNotInit ;
+uint32_t myVarInit = 100;
+
+
+const uint32_t myVarConst = 100;
+
+
+extern void print_var(const uint32_t* var);
+
+extern unsigned int _my_section_start ;
+
+int
+main(int argc, char* argv[])
+{
+
+  while (1)
+    {
+    }
+}

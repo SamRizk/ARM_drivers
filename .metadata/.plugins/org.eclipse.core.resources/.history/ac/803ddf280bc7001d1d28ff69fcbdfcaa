@@ -1,0 +1,40 @@
+
+#include "RCC/RCC.h"
+#include "LED.h"
+#include "SYSTICK/SYSTICK.h"
+void ledon(void);
+void Delay_ms(volatile int time_ms);
+
+int
+main(void)
+{
+	RCC_setHSESystemClock();
+	RCC_enableAHB1Peripheral(Peripheral_GPIOA);
+	RCC_enableAHB1Peripheral(Peripheral_GPIOC);
+	LED_init();
+	SYSTICK_init(25);
+	SYSTICK_enableINT();
+	SYSTICK_setCallBackFunc(ledon);
+	SYSTICK_setTick_ms(1000);
+	SYSTICK_start();
+
+
+  while (1)
+    {
+
+       // Add your code here.
+
+
+    }
+}
+
+void ledon()
+{
+	LED_toggleState(LED_4);
+}
+void Delay_ms(volatile int time_ms)
+{
+	    int j;
+        for(j = 0; j < time_ms*4000; j++)
+            {}  /* excute NOP for 1ms */
+}

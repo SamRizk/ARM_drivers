@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;Drivers/include/SCHED.h&apos; to &apos;SCHED&apos;" description="Rename resource &apos;SCHED.h&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="include/SCHED.h" name="SCHED" stamp="1679170115227" updateReferences="true"/>
+</session>

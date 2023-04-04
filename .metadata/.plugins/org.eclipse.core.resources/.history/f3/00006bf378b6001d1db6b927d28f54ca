@@ -1,0 +1,36 @@
+/*
+ * SWITCH_cfg.c
+ *
+ *  Created on: Feb 23, 2023
+ *      Author: samir
+ */
+
+#include "SWITCH.h"
+extern const SWITCH_cfg_t SWC_cfg[SWCS_COUNT] = {[SWC_Alarm] = { 
+                                                                .port = PORTB_GPIO,
+                                                                .pin  = GPIO_PIN0,
+                                                                .name = SWC_Alarm,
+                                                                .mode = GPIO_MODE_INPUT_PULLUP,
+                                                                .inti_state = SWC_STATUS_NOTPREESED,
+                                                                .pull = PULL_UP_SWC_STATUS
+                                                                },
+                                                
+                                                [SWC_Stop] = { 
+                                                                .port = PORTB_GPIO,
+                                                                .pin  = GPIO_PIN1,
+                                                                .name = SWC_Stop,
+                                                                .mode = GPIO_MODE_INPUT_PULLDOWN,
+                                                                .inti_state = SWC_STATUS_NOTPREESED,
+                                                                .pull = PULL_DOWN_SWC_STATUS
+                                                             },
+                                                
+                                                [SWC_Start] = {
+                                                                .port = PORTB_GPIO,
+                                                                .pin  = GPIO_PIN2,
+                                                                .name = SWC_Start,
+                                                                .mode = GPIO_MODE_INPUT_PULLUP,
+                                                                .inti_state = SWC_STATUS_NOTPREESED,
+                                                                .pull = PULL_UP_SWC_STATUS
+                                                              }
+
+                                                  };

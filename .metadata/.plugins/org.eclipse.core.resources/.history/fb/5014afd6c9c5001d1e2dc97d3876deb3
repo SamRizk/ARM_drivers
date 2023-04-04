@@ -1,0 +1,14 @@
+/*
+ * LED_APP2.c
+ *
+ *  Created on: Mar 18, 2023
+ *      Author: samir
+ */
+#include "LED.h"
+
+extern void APP2(void);
+
+void APP2(void)
+{
+
+}

@@ -1,0 +1,46 @@
+
+#include "RCC/RCC.h"
+#include "GPIO/GPIO.h"
+
+#define  ADDR       (u32)0x40023800
+
+void Delay_ms(volatile int time_ms);
+
+int
+main(void)
+{
+
+	 RCC_setHSESystemClock();
+	 RCC_enableAHB1Peripheral(Peripheral_GPIOA);
+	 GPIO_CFG_t LED0;
+	 LED0.GPIO_Port = PORTA_GPIO;
+	 LED0.GPIO_Pin  = GPIO_PIN10;
+	 LED0.GPIO_Mode = GPIO_MODE_OUTPUT_OD_HS;
+	 LED0.GPIO_AF    = GPIO_AF1_TIM1;
+	 GPIO_init(&LED0);
+
+
+
+
+  while (1)
+    {
+       // Add your code here.
+    }
+}
+
+/*
+u32 SS =MEM_ADDR(BIT_BAND(ADDR,17));
+if (SS == 0)
+	SS = 1 ;
+MEM_ADDR(BIT_BAND(ADDR,16)) = 0x1;
+u32 ZZ = MEM_ADDR(BIT_BAND(ADDR,17));
+if(ZZ == 1)
+	ZZ = 0;
+u32 cc =RCC_getHSERDY();*/
+
+void Delay_ms(volatile int time_ms)
+{
+	    int j;
+        for(j = 0; j < time_ms*4000; j++)
+            {}  /* excute NOP for 1ms */
+}

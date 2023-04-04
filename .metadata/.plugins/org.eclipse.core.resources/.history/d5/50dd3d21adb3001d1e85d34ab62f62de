@@ -1,0 +1,42 @@
+/*
+ * LED_cfg.c
+ *
+ *  Created on: Feb 23, 2023
+ *      Author: samir
+ */
+
+
+#include "LED.h"
+
+ const LED_cfg_t LED_cfg[LEDS_COUNT]={ [LED_Alarm]     = {
+		 	 	 	 	 	 	 	 	 	 	 	 	   .pin   = GPIO_PIN0,
+                                                           .color = LED_RED,
+                                                           .inti_state = LED_STATUS_OFF,
+                                                           .mode = GPIO_MODE_OUTPUT_PP_PD_HS,
+                                                           .port = PORTA_GPIO,
+                                                           .name = "Alarm"
+                                                           .connection = CONEC_ACTIVE_HIGH
+    
+                                                         },
+                                        [LED_Stop]     = {
+                                        				   .pin   = GPIO_PIN1,
+                                                           .color = LED_GREEN,
+                                                           .inti_state = LED_STATUS_OFF,
+                                                           .mode = GPIO_MODE_OUTPUT_PP_PD_HS,
+                                                           .port = PORTA_GPIO,
+                                                           .name = "Stop"
+                                                           .connection = CONEC_ACTIVE_HIGH
+    
+                                                         },
+                                        [LED_OnBoard] = {
+                                        				   .pin   = GPIO_PIN13,
+                                                           .color = LED_GREEN,
+                                                           .inti_state = LED_STATUS_OFF,
+                                                           .mode = GPIO_MODE_OUTPUT_PP_PD_HS,
+                                                           .port = PORTC_GPIO,
+                                                           .name = "OnBoard"
+                                                           .connection = CONEC_ACTIVE_HIGH
+                                                     }
+
+
+                                       };

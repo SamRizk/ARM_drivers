@@ -1,0 +1,578 @@
+/*
+ * GPIO.c
+ *
+ *  Created on: Feb 14, 2023
+ *      Author: samir
+ */
+
+
+/*********************************************** include file *******************************************/
+#include "LIB/Bit_math.h"
+#include "LIB/Std_types.h"
+
+#include "MCLA/GPIO/GPIO.h"
+
+
+/*********************************************** MACROS ************************************************/
+#define GET_BIT_NUM(BIT)       ((BIT&-BIT)>>1)
+
+#define PIN_CHECK_MASK    ((u32)0x10000U)
+#define PIN_CLR_MASK      ((u32)0xEFFFFU)
+#define IS_GPIO(PIN)      (((PIN) & (PIN_CHECK_MASK)) == PIN_CHECK_MASK)
+
+#define IS_PORT(PORT)     (((PORT) == PORTA_GPIO) || \
+                           ((PORT) == PORTB_GPIO) || \
+                           ((PORT) == PORTC_GPIO))
+
+#define MODE_CHECK_MASK   (0x80U)
+#define MODE_CLR_MASK     (0x7FU)
+#define IS_MODE(MODE)    (((MODE) & (MODE_CHECK_MASK)) == (MODE_CHECK_MASK))
+
+#define IS_PULL(PULL)      (((PULL) == GPIO_PULL_NONE)    || \
+                           ( (PULL) == GPIO_PULL_UP  )    || \
+                           ( (PULL) == GPIO_PULL_DOWN) )
+
+#define IS_SPEED(SPEED)   (((SPEED) ==  GPIO_SPEED_LOW  )     || \
+                           ((SPEED) == GPIO_SPEED_MEDIUM)     || \
+                           ((SPEED) == GPIO_SPEED_HIGH))
+
+#define IS_GPIO_AF(AF)   (((AF) == GPIO_AF0_RTC_50Hz)   || ((AF) == GPIO_AF9_TIM14)     ||\
+                          ((AF) == GPIO_AF0_MCO)        || ((AF) == GPIO_AF0_TAMPER)    ||\
+                          ((AF) == GPIO_AF0_SWJ)        || ((AF) == GPIO_AF0_TRACE)     ||\
+                          ((AF) == GPIO_AF1_TIM1)       || ((AF) == GPIO_AF1_TIM2)      ||\
+                          ((AF) == GPIO_AF2_TIM3)       || ((AF) == GPIO_AF2_TIM4)      ||\
+                          ((AF) == GPIO_AF2_TIM5)       || ((AF) == GPIO_AF4_I2C1)      ||\
+                          ((AF) == GPIO_AF4_I2C2)       || ((AF) == GPIO_AF4_I2C3)      ||\
+                          ((AF) == GPIO_AF5_SPI1)       || ((AF) == GPIO_AF5_SPI2)      ||\
+                          ((AF) == GPIO_AF6_SPI3)       || ((AF) == GPIO_AF5_SPI4)      ||\
+                          ((AF) == GPIO_AF7_USART1)     || ((AF) == GPIO_AF7_USART2)    ||\
+                          ((AF) == GPIO_AF8_USART6)     || ((AF) == GPIO_AF10_OTG_FS)   ||\
+                          ((AF) == GPIO_AF9_I2C2)       || ((AF) == GPIO_AF9_I2C3)      ||\
+                          ((AF) == GPIO_AF12_SDIO)      || ((AF) == GPIO_AF15_EVENTOUT) )
+
+#define IS_GPIO_VALUE(VAL)    ( (VAL == GPIO_HIGH) || (VAL == GPIO_LOW))
+
+#define CLR_DOUBLE_BITS                 0x3
+#define CLR_QUAD_BITS                   ((u32)0xFU)
+
+#define PUPD_MASK                       0x3
+#define OSPEEDR_MASK                    0xC
+#define OTYPER_MASK                     0x10
+#define MODER_MASK                      0x60
+
+#define GET_PUPDR_BITS(MASK)            (MASK &  PUPD_MASK)
+#define GET_OSPEEDR_BITS(MASK)          ((MASK & OSPEEDR_MASK)>>2)
+#define GET_OTYPER_BITS(MASK)           ((MASK & OTYPER_MASK) >>4)
+#define GET_MODER_BITS(MASK)            ((MASK & MODER_MASK)  >>5)
+
+#define MODE_COUNT(MODE,PIN)            ((u32)MODE<<PIN*2)
+#define SPEED_COUNT(SPEED,PIN)          ((u32)SPEED<<PIN*2)
+#define PULL_COUNT(PULL,PIN)            ((u32)PULL<<PIN*2)
+
+#define  AF_LOW_REG                        0
+#define  AF_HIGH_REG                       1
+
+#define  GPIO_PORT_MASK                    ((u32)0xFFFFFFFFU)
+#define  GPIO_PORT_OP_MASK                 ((u32)0x55555555U)
+
+#define PORT_SIZE                         16
+#define BIT_MASK_QUAD_SHIFT               4
+#define BIT_MASK_SHIFT                    2
+#define NUMBER_OF_LOW_AF                  7
+
+#define PORT_SET_RESET                   ((u32)0x0000FFFFU)
+
+#define GPIO_INPUT                       0b00
+#define GPIO_OUTPUT                      0b01
+#define GPIO_ALTF                        0b10
+#define GPIO_ANALOG                      0b11
+
+#define GPIO_LCK_PORT_PIN                  16
+
+/******************************************** Types definitions **********************************************/
+
+/*********************************************    REG    ********************************************/
+typedef struct{
+
+	volatile u32 GPIO_MODER   ;
+	volatile u32 GPIO_OTYPER  ;
+	volatile u32 GPIO_OSPEEDR ;
+	volatile u32 GPIO_PUPDR   ;
+	volatile u32 GPIO_IDR     ;
+	volatile u32 GPIO_ODR     ;
+	volatile u32 GPIO_BSRR    ;
+	volatile u32 GPIO_LCKR    ;
+	volatile u32 GPIO_AFR[2]  ;
+    
+}GPIO;
+
+/*#define GPIOA ((volatile GPIO*)0x40020000)
+#define GPIOB ((volatile GPIO*)0x40020400)
+#define GPIOC ((volatile GPIO*)0x40020800)*/
+
+/********************************************** variables ************************************************/
+
+
+
+
+
+/********************************************** Static Function Prototypes ********************************/
+static u32 GetPinNumber(u32 mask);
+static GPIO_ERROR_STATE_t Wraper_MODER  (void* port, GPIO_PINS_t pin,GPIO_MODES_t mode);
+static GPIO_ERROR_STATE_t Wraper_OTYPER (void* port, GPIO_PINS_t pin,GPIO_MODES_t mode);
+static GPIO_ERROR_STATE_t Wraper_OSPEEDR(void* port, GPIO_PINS_t pin, GPIO_MODES_t mode);
+static GPIO_ERROR_STATE_t Wraper_PUPDR  (void* port, GPIO_PINS_t pin, GPIO_MODES_t mode);
+static GPIO_ERROR_STATE_t Wraper_SlectAF(u32 AF, GPIO_PINS_t pin,void* port);
+
+/********************************************** End Static Function ***************************************/
+
+
+
+/********************************************** implementation of APIs *************************************/
+
+GPIO_ERROR_STATE_t GPIO_init(GPIO_CFG_t* copy_ptcfg)
+{
+    GPIO_ERROR_STATE_t error_state = GPIO_OK;
+    if(IS_MODE(copy_ptcfg->GPIO_Mode)   == 0 ||
+       IS_PORT(copy_ptcfg->GPIO_Port)   == 0 ||
+       IS_GPIO_AF(copy_ptcfg->GPIO_AF)  == 0 )
+    {
+      error_state = GPIO_ERROR_INVALID_PARAM;
+    }
+    else if(copy_ptcfg->GPIO_Port == NULL)
+    {
+        error_state = GPIO_NULL_POINTER;
+    }
+    else
+    {
+    
+    
+        error_state = Wraper_MODER(copy_ptcfg->GPIO_Port, copy_ptcfg->GPIO_Pin,copy_ptcfg->GPIO_Mode);
+    
+        error_state = Wraper_OTYPER(copy_ptcfg->GPIO_Port, copy_ptcfg->GPIO_Pin,copy_ptcfg->GPIO_Mode);
+    
+        error_state = Wraper_OSPEEDR(copy_ptcfg->GPIO_Port, copy_ptcfg->GPIO_Pin,copy_ptcfg->GPIO_Mode);
+    
+        error_state = Wraper_PUPDR(copy_ptcfg->GPIO_Port, copy_ptcfg->GPIO_Pin,copy_ptcfg->GPIO_Mode);
+     
+        error_state = Wraper_SlectAF(copy_ptcfg->GPIO_AF, copy_ptcfg->GPIO_Pin,copy_ptcfg->GPIO_Port);
+     
+
+    } 
+
+
+    return error_state;
+}
+
+
+
+GPIO_ERROR_STATE_t GPIO_setPinDir(void* port, GPIO_PINS_t pin,GPIO_MODES_t mode)
+{
+    GPIO_ERROR_STATE_t error_state = GPIO_OK;  
+    u32 LOC_tmpBuffer,LOC_pinnumber; 
+
+    if(IS_PORT(port) == 0 || IS_GPIO(pin) == 0 || IS_MODE(mode) == 0 )
+    {
+        error_state = GPIO_ERROR_INVALID_PARAM;
+    }
+    else if(port == NULL)
+    {
+        error_state = GPIO_NULL_POINTER;
+    }
+    else
+    {
+    LOC_tmpBuffer =   ((GPIO*)port)->GPIO_MODER;
+    LOC_pinnumber =   GetPinNumber(pin);
+    LOC_tmpBuffer &= ~(CLR_DOUBLE_BITS<<(LOC_pinnumber*BIT_MASK_SHIFT));
+    LOC_tmpBuffer |=  (GET_MODER_BITS(mode)<<(LOC_pinnumber*BIT_MASK_SHIFT));
+    ((GPIO*)port)->GPIO_MODER = LOC_tmpBuffer;
+    }      
+    return error_state;
+}
+
+
+GPIO_ERROR_STATE_t GPIO_setOutMode(void* port, GPIO_PINS_t pin,GPIO_MODES_t mode)
+{
+    GPIO_ERROR_STATE_t error_state = GPIO_OK;  
+    u32 LOC_tmpBuffer,LOC_pinnumber; 
+
+    if(IS_PORT(port) == 0 || IS_GPIO(pin) == 0 || IS_MODE(mode) == 0 )
+    {
+        error_state = GPIO_ERROR_INVALID_PARAM;
+    }
+    else if(port == NULL)
+    {
+        error_state = GPIO_NULL_POINTER;
+    }
+    else
+    {
+    LOC_tmpBuffer = ((GPIO*)port)->GPIO_OTYPER;
+    LOC_pinnumber = GetPinNumber(pin);
+    LOC_tmpBuffer &= ~(CLR_DOUBLE_BITS << (LOC_pinnumber));
+    LOC_tmpBuffer |=  (GET_OTYPER_BITS(mode)<<(LOC_pinnumber));
+    ((GPIO*)port)->GPIO_OTYPER = LOC_tmpBuffer;
+    }
+    
+    return error_state;
+}
+
+
+GPIO_ERROR_STATE_t GPIO_setPinSpeed(void* port, GPIO_PINS_t pin,GPIO_MODES_t mode)
+{
+    GPIO_ERROR_STATE_t error_state = GPIO_OK;  
+    u32 LOC_tmpBuffer,LOC_pinnumber; 
+
+    if(IS_PORT(port) == 0 || IS_GPIO(pin) == 0 || IS_MODE(mode) == 0 )
+    {
+        error_state = GPIO_ERROR_INVALID_PARAM;
+    }
+    else if(port == NULL)
+    {
+        error_state = GPIO_NULL_POINTER;
+    }
+    else
+    {
+        LOC_tmpBuffer = ((GPIO*)port)->GPIO_OSPEEDR;
+        LOC_pinnumber = GetPinNumber(pin);
+        LOC_tmpBuffer &= ~(CLR_DOUBLE_BITS << (LOC_pinnumber * BIT_MASK_SHIFT ));
+        LOC_tmpBuffer |=  (GET_OSPEEDR_BITS(mode)<<(LOC_pinnumber * BIT_MASK_SHIFT));
+        ((GPIO*)port)->GPIO_OSPEEDR = LOC_tmpBuffer;
+    } 
+    return error_state;
+}
+
+
+GPIO_ERROR_STATE_t GPIO_setPinPull(void* port, GPIO_PINS_t pin,GPIO_MODES_t mode)
+{
+    GPIO_ERROR_STATE_t error_state = GPIO_OK;  
+    u32 LOC_tmpBuffer,LOC_pinnumber; 
+  
+    if(IS_PORT(port) == 0 || IS_GPIO(pin) == 0 || IS_MODE(mode) == 0 )
+    {
+        error_state = GPIO_ERROR_INVALID_PARAM;
+    }
+    else if(port == NULL)
+    {
+        error_state = GPIO_NULL_POINTER;
+    }
+    else
+    {
+        LOC_tmpBuffer = ((GPIO*)port)->GPIO_PUPDR;
+        LOC_pinnumber = GetPinNumber(pin);
+        LOC_tmpBuffer &= ~(CLR_DOUBLE_BITS << (LOC_pinnumber * BIT_MASK_SHIFT ));
+        LOC_tmpBuffer |=  (GET_PUPDR_BITS(mode)<<(LOC_pinnumber * BIT_MASK_SHIFT));
+        ((GPIO*)port)->GPIO_PUPDR = LOC_tmpBuffer;
+    }
+    return error_state;
+}
+
+
+GPIO_ERROR_STATE_t GPIO_selectAF(u32  AFNumber, GPIO_PINS_t pin,void* port)
+{
+    GPIO_ERROR_STATE_t error_state = GPIO_OK;  
+    u32 tmpBuffer,LOC_pinnumber;
+
+    if(IS_PORT(port) == 0 || IS_GPIO(pin) == 0 || IS_GPIO_AF(AFNumber) == 0 )
+    {
+        error_state = GPIO_ERROR_INVALID_PARAM;
+    }
+    else if(port == NULL)
+    {
+        error_state = GPIO_NULL_POINTER;
+    }
+    else
+    {
+        LOC_pinnumber = GetPinNumber(pin);
+        if(LOC_pinnumber <= NUMBER_OF_LOW_AF )
+        {
+            tmpBuffer = ((GPIO*)port)->GPIO_AFR[AF_LOW_REG];
+            tmpBuffer &= ~(CLR_QUAD_BITS <<    (LOC_pinnumber * BIT_MASK_QUAD_SHIFT ));
+            tmpBuffer |=  (AFNumber << (LOC_pinnumber * BIT_MASK_QUAD_SHIFT ));
+            ((GPIO*)port)->GPIO_AFR[AF_LOW_REG] = tmpBuffer;
+        }
+        else if(LOC_pinnumber > NUMBER_OF_LOW_AF)
+        {
+            LOC_pinnumber %= NUMBER_OF_LOW_AF + 1;
+            tmpBuffer =  ((GPIO*)port)->GPIO_AFR[AF_HIGH_REG];
+            tmpBuffer &= ~(CLR_QUAD_BITS <<    (LOC_pinnumber * BIT_MASK_QUAD_SHIFT ));
+            tmpBuffer |=  (AFNumber << (LOC_pinnumber * BIT_MASK_QUAD_SHIFT ));
+             ((GPIO*)port)->GPIO_AFR[AF_HIGH_REG] = tmpBuffer;
+        }
+        else
+        {
+            error_state = GPIO_ERROR_INVALID_PARAM;
+        }
+      
+    }
+    return error_state;
+}
+
+GPIO_ERROR_STATE_t GPIO_setPinVal(void* port, GPIO_PINS_t pin)
+{
+    GPIO_ERROR_STATE_t error_state = GPIO_OK;
+    u32 tmpBuffer;
+    if(IS_PORT(port) == 0 ||IS_GPIO(pin) == 0)
+    {
+        error_state = GPIO_ERROR_INVALID_PARAM;
+    }
+    else if(port == NULL)
+    {
+        error_state = GPIO_NULL_POINTER;
+    }
+    else
+    {
+   
+        tmpBuffer = ((GPIO*)port)->GPIO_BSRR;
+        pin &= PIN_CLR_MASK;
+        tmpBuffer |= pin ;
+        ((GPIO*)port)->GPIO_BSRR = tmpBuffer;
+    } 
+    return error_state;
+}
+
+
+GPIO_ERROR_STATE_t GPIO_resetPinVal(void* port, GPIO_PINS_t pin)
+{
+     GPIO_ERROR_STATE_t error_state = GPIO_OK;
+    u32 tmpBuffer;
+
+    if(IS_PORT(port) == 0 || IS_GPIO(pin) == 0)
+    {
+        error_state = GPIO_ERROR_INVALID_PARAM;
+    }
+    else if(port == NULL)
+    {
+        error_state = GPIO_NULL_POINTER;
+    }
+    else
+    {
+        tmpBuffer = ((GPIO*)port)->GPIO_BSRR;
+        pin &= PIN_CLR_MASK;
+        tmpBuffer |= (pin<<PORT_SIZE) ;
+        ((GPIO*)port)->GPIO_BSRR = tmpBuffer;
+    }
+    return error_state;
+}
+
+
+GPIO_ERROR_STATE_t GPIO_readOutPin(void* port, GPIO_PINS_t pin ,u32* value)
+{
+    GPIO_ERROR_STATE_t error_state = GPIO_OK;
+    u32 pin_Number ;
+    if(IS_PORT(port) == 0 || IS_GPIO(pin) == 0)
+    {
+        error_state = GPIO_ERROR_INVALID_PARAM;
+    }
+    else if(port == NULL || value == NULL)
+    {
+        error_state = GPIO_NULL_POINTER;
+    }
+    else
+    {
+            pin_Number = GetPinNumber(pin);
+            *value = GET_BIT(((GPIO*)port)->GPIO_ODR,pin_Number);
+   
+    }
+    return error_state;
+}
+
+GPIO_ERROR_STATE_t GPIO_readPhysVal(void* port, GPIO_PINS_t pin,u32* value) 
+{
+    u32 pin_Number ;
+    GPIO_ERROR_STATE_t LOC_ERROR_STATE =GPIO_OK;
+    if(IS_PORT(port) == 0 || IS_GPIO(pin) == 0)
+    {
+    	LOC_ERROR_STATE = GPIO_ERROR_INVALID_PARAM;
+    }
+    else if(port == NULL || value == NULL)
+    {
+    	LOC_ERROR_STATE = GPIO_NULL_POINTER;
+    }
+    else
+    {
+        pin_Number = GetPinNumber(pin);
+        *value  = GET_BIT(((GPIO*)port)->GPIO_IDR,pin_Number);
+      
+    }
+    return LOC_ERROR_STATE;
+}
+
+GPIO_ERROR_STATE_t GPIO_setPortDir(void* port, GPIO_MODES_t mode)
+{
+    GPIO_ERROR_STATE_t error_state = GPIO_OK;
+    u32 LOC_tmpBuffer;
+        if(IS_PORT(port) == 0 || IS_MODE(mode) == 0)
+    {
+        error_state = GPIO_ERROR_INVALID_PARAM;
+    }
+    else if(port == NULL)
+    {
+        error_state = GPIO_NULL_POINTER;
+    }
+    else
+    {
+        LOC_tmpBuffer = ((GPIO*)port)->GPIO_MODER;
+        LOC_tmpBuffer &= ~(GPIO_PORT_MASK);
+        if(GET_MODER_BITS(mode) == GPIO_INPUT)
+        {
+            LOC_tmpBuffer |= ~(GPIO_PORT_MASK);
+        }
+        else if (GET_MODER_BITS(mode) == GPIO_OUTPUT)
+        {
+            LOC_tmpBuffer |= (GPIO_PORT_OP_MASK);
+        }
+        else if (GET_MODER_BITS(mode) == GPIO_ALTF)
+        {
+            LOC_tmpBuffer |= ~(GPIO_PORT_OP_MASK);
+        }
+        else
+        {
+            LOC_tmpBuffer |= (GPIO_PORT_MASK);
+        }
+        
+        ((GPIO*)port)->GPIO_MODER |= LOC_tmpBuffer;
+      
+    }
+    return error_state;
+}
+
+GPIO_ERROR_STATE_t GPIO_setPortVal(void* port)
+{
+    GPIO_ERROR_STATE_t error_state = GPIO_OK;
+    if(IS_PORT(port) == 0)
+    {
+        error_state = GPIO_ERROR_INVALID_PARAM;
+    }
+    else if(port == NULL)
+    {
+        error_state = GPIO_NULL_POINTER;
+    }
+    else
+    {
+        ((GPIO*)port)->GPIO_BSRR = PORT_SET_RESET;
+       
+    }
+    return error_state;
+}
+
+
+GPIO_ERROR_STATE_t GPIO_resetPortVal(void* port)
+{
+    GPIO_ERROR_STATE_t error_state = GPIO_OK;
+    if(IS_PORT(port) == 0)
+    {
+        error_state = GPIO_ERROR_INVALID_PARAM;
+    }
+    else if(port == NULL)
+    {
+        error_state = GPIO_NULL_POINTER;
+    }
+    else
+    {
+            ((GPIO*)port)->GPIO_BSRR = (PORT_SET_RESET << PORT_SIZE);
+         
+    }
+    return error_state;
+}
+
+
+GPIO_ERROR_STATE_t GPIO_readPortVal(void* port,u16* portVal)
+{
+    GPIO_ERROR_STATE_t error_state = GPIO_OK;
+    if(IS_PORT(port) == 0 )
+    {
+        error_state = GPIO_ERROR_INVALID_PARAM;
+    }
+    else if(port == NULL || portVal == NULL)
+    {
+        error_state = GPIO_NULL_POINTER;
+    }
+    else
+    {  
+            *portVal = ((GPIO*)port)->GPIO_IDR;
+       
+    }
+    return error_state;
+}   
+
+
+GPIO_ERROR_STATE_t GPIO_lockPins(GPIO_PINS_t pins,void* port)
+{
+   GPIO_ERROR_STATE_t LOC_error = GPIO_OK;
+   u32 tmp_Buffer = pins;
+   tmp_Buffer |= 1<<GPIO_LCK_PORT_PIN;
+   ((GPIO*)port)->GPIO_LCKR = tmp_Buffer;
+   tmp_Buffer &= ~(1<<GPIO_LCK_PORT_PIN);
+   ((GPIO*)port)->GPIO_LCKR = tmp_Buffer;
+   tmp_Buffer |= (1<<GPIO_LCK_PORT_PIN);
+   ((GPIO*)port)->GPIO_LCKR = tmp_Buffer;
+   tmp_Buffer = ((GPIO*)port)->GPIO_LCKR;
+
+    if(GET_BIT(((GPIO*)port)->GPIO_LCKR,GPIO_LCK_PORT_PIN ))
+    LOC_error = GPIO_OK;
+    else 
+    LOC_error =GPIO_ERROR;
+    return LOC_error;
+
+}
+ 
+
+
+/********************************************** End Of APIs ***********************************************/
+
+
+
+/********************************************** Static Function implementation ****************************/
+
+
+static u32 GetPinNumber(u32 mask)
+{
+    u32 count = 0,loopCount = 0;
+    while (GET_BIT(mask,loopCount)!=1)
+    {
+        count++;
+        loopCount++;
+    }
+    return count;
+
+}
+
+
+static GPIO_ERROR_STATE_t Wraper_MODER(void* port, GPIO_PINS_t pin,GPIO_MODES_t mode)
+{
+    GPIO_ERROR_STATE_t error_state = GPIO_OK;
+    error_state = GPIO_setPinDir(port, pin, mode);
+    return error_state;
+}
+
+
+static GPIO_ERROR_STATE_t Wraper_OTYPER(void* port, GPIO_PINS_t pin,GPIO_MODES_t mode)
+{
+    GPIO_ERROR_STATE_t error_state = GPIO_OK;
+    error_state = GPIO_setOutMode(port, pin, mode);
+    return error_state;
+}
+
+static GPIO_ERROR_STATE_t Wraper_OSPEEDR(void* port, GPIO_PINS_t pin, GPIO_MODES_t mode)
+{
+    GPIO_ERROR_STATE_t error_state = GPIO_OK;
+    error_state = GPIO_setPinSpeed(port, pin, mode);
+    return error_state;
+}
+
+static GPIO_ERROR_STATE_t Wraper_PUPDR(void* port, GPIO_PINS_t pin, GPIO_MODES_t mode)
+{
+    GPIO_ERROR_STATE_t error_state = GPIO_OK;
+    error_state = GPIO_setPinPull(port, pin, mode);
+    return error_state;
+}
+
+static GPIO_ERROR_STATE_t Wraper_SlectAF(u32 AF, GPIO_PINS_t pin,void* port)
+{
+    GPIO_ERROR_STATE_t error_state = GPIO_OK;
+    error_state = GPIO_selectAF(AF, pin, port);
+    return error_state;
+}
+
+/********************************************** End Static Function implementation*************************/
+

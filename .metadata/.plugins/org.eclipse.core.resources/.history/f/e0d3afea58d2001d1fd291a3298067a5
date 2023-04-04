@@ -1,0 +1,48 @@
+
+#include "RCC/RCC.h"
+#include "SWITCH.h"
+#include "LED.h"
+#include "APP.h"
+#include "LCD.h"
+#include "SCHED/SCHED.h"
+#include "UART/UART.h"
+void uartcp(void)
+{
+	trace_puts("Hi Form UART");
+}
+int
+main(void)
+{
+	//RCC_setHSESystemClock();
+	RCC_enableAHB1Peripheral(Peripheral_GPIOA);
+	RCC_enableAHB1Peripheral(Peripheral_GPIOB);
+	RCC_enableAHB1Peripheral(Peripheral_GPIOC);
+	// SWC_init();
+	// LED_init();
+	// LCD_PinInit();
+	// SCHED_init();
+	// LCD_writeStringAsynchronously("Hello world",11,0,0);
+	// SCHED_start();
+	GPIO_setPinDir(PORTA_GPIO,GPIO_PIN9,GPIO_MODE_AF_PP_HS);
+	GPIO_setPinDir(PORTA_GPIO,GPIO_PIN10,GPIO_MODE_AF_PP_HS);
+	GPIO_selectAF(GPIO_AF7_USART1,GPIO_PIN10,PORTA_GPIO);
+	GPIO_selectAF(GPIO_AF7_USART1,GPIO_PIN9,PORTA_GPIO);
+
+	UART_SetTXCallback(UART1,uartcp);
+	UART_SetRXCallback(UART1,uartcp);
+	UART_CFG_t cfg_str={.BaudRate=9600,.Oversampling=0,.ParityControl=0,.UART_Channal=UART_1,.UartEnable=1,.WordLength=0};
+	UART_Init(&cfg_str);
+	pu8 name = "SAMIR";
+	UART_SendBufferAsynZeroCopy(UART1,name,sizeof(name));
+ while (1)
+   {
+
+      // Add your code here.
+
+
+   }
+	return 0;
+}
+
+
+

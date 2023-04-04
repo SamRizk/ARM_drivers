@@ -1,0 +1,30 @@
+
+#include "RCC/RCC.h"
+#include "SWITCH.h"
+#include  "APP.h"
+#include "SCHED/SCHED.h"
+
+int
+main(void)
+{
+	RCC_setHSESystemClock();
+	RCC_enableAHB1Peripheral(Peripheral_GPIOA);
+	RCC_enableAHB1Peripheral(Peripheral_GPIOC);
+	//SWC_init();
+	SCHED_init();
+	SCHED_start();
+
+
+//
+//  while (1)
+//    {
+//
+//       // Add your code here.
+//
+//
+//    }
+	return 0;
+}
+
+
+

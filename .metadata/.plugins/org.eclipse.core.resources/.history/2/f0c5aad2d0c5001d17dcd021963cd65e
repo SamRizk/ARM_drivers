@@ -1,0 +1,648 @@
+/*
+ * RCC.c
+ *
+ *  Created on: Feb 6, 2023
+ *      Author: samir
+ */
+
+/******************************************** includes *****************************************************/
+
+#include "RCC/RCC.h"
+
+
+
+/******************************************** End of includes *********************************************/
+
+/********************************************* defines *****************************************************/
+
+/********************************read system clock ****************************************/
+#define SYS_HSI_MASK                         (u32)(0x00000000)
+#define SYS_HSE_MASK                         (u32)(0x00000001)
+#define SYS_PLL_MASK                         (u32)(0x00000002)
+
+#define SYS_CHK                              0x0000000C
+#define SYSCLK_CLR                           0xFFFFFFFC
+#define SYSCLK_CHECK                         0x00000300
+/******************************************************************************************/
+
+#define PRESCALER_APB1_CLOCK_CLR            0xFFFFE3FF
+        
+#define PRESCALER_APB2_CLOCK_CLR            0xFFFF1FFF
+                
+#define PRESCALER_AHB_CLOCK_CLR             0xFFFFFF0F
+
+#define PRESCALER_CLOCK_CHECK               0x00000300
+/******************************************************************************************/ 
+#define CLOCK_HSI_CLR                       0xFFFFFFFE
+#define CLOCK_HSE_CLR                       0xFFFEFFFF
+#define CLOCK_PLL_CLR                       0xFEFFFFFF
+#define CLOCK_HSEBYPASS_CLR                 0xFFFBFFFF
+#define CLOCK_ENABLE_CHECK                  (u32)(0x4)
+
+#define PLLN_CLOCK_MULTIP_CLR                0xFFFF803F
+#define PLLM_CLOCK_DIVIDE_CLR                0xFFFFFFE0
+#define PLLQ_CLOCK_DIVIDE_CLR                0xF0FFFFFF
+#define PLLP_CLOCK_DIVIDE_CLR                0xFFFCFFFF
+#define PLL_CLOCK_CONFIG_CHECK               0xF0000000
+
+#define PLLSRC_BIT                              22
+#define HSI_RDY_MASK                           (u32)(0x2)
+#define HSE_RDY_MASK                           0x000020000
+#define PLL_RDY_MASK                           0x002000000   
+
+#define AHB_PRE_MASK    ((u32)0xF0)
+#define AHB_PRE_SHIFT    4
+#define PLL_Q_SHIFT      23
+#define PLL_Q_MASK      ((u32)0xF000000)
+#define PLL_N_MASK ((u32)0x1FFUL)
+#define PLL_N_SHIFT (5)
+#define PLL_M_MASK ((u32)0x1F)
+#define NUMBER_OF_TRILES                        0xFFFF
+/********************************************* End Of defines **********************************************/
+
+/********************************************** types ******************************************************/
+
+typedef struct
+{
+	volatile u32 RCC_CR;                    // Clock control register 
+	volatile u32 RCC_PLLCFGR;				// 
+	volatile u32 RCC_CFGR;
+	volatile u32 RCC_CIR;
+	volatile u32 RCC_AHB1RSTR;
+	volatile u32 RCC_AHB2RSTR;
+	volatile u32 RCC_Reserved1;
+	volatile u32 RCC_Reserved2;
+	volatile u32 RCC_APB1RSTR;
+	volatile u32 RCC_APB2RSTR;
+    volatile u32 RCC_Reserved3;
+	volatile u32 RCC_Reserved4;
+	volatile u32 RCC_AHB1ENR;
+	volatile u32 RCC_AHB2ENR;
+    volatile u32 RCC_Reserved5;
+	volatile u32 RCC_Reserved6;
+	volatile u32 RCC_APB1ENR;
+	volatile u32 RCC_APB2ENR;
+    volatile u32 RCC_Reserved7;
+	volatile u32 RCC_Reserved8;
+	volatile u32 RCC_AHB1LPENR;
+	volatile u32 RCC_AHB2LPENR;
+	volatile u32 RCC_Reserved9;
+	volatile u32 RCC_Reserved10;
+	volatile u32 RCC_APB1LPENR;
+	volatile u32 RCC_APB2LPENR;
+	volatile u32 RCC_Reserved11;
+	volatile u32 RCC_Reserved12;
+	volatile u32 RCC_BDCR;
+	volatile u32 RCC_CSR;
+	volatile u32 RCC_Reserved13;
+	volatile u32 RCC_Reserved14;
+	volatile u32 RCC_SSCGR;
+	volatile u32 RCC_PLLI2SCFGR;
+	volatile u32 RCC_Reserved15;
+	volatile u32 RCC_DCKCFGR;
+
+}RCC;
+
+#define RCC_REG ((volatile RCC *)0x40023800)
+
+
+/********************************************* End Of types **********************************************/
+
+
+/********************************************** variables ************************************************/
+
+
+
+
+/********************************************** End variables *********************************************/
+
+
+/********************************************** Static Function Prototypes ********************************/
+static u32 Get_system_clock(void);
+static void Set_clock_on(u32 clock);
+static RCC_enuErrorStatus_t TimeOut(u32 clock);
+
+/********************************************** End Static Function ***************************************/
+
+
+
+/********************************************** implementation of APIs *************************************/
+
+RCC_enuErrorStatus_t RCC_setHSISystemClock(void)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    u32 LOC_tmp = RCC_REG->RCC_CFGR;
+    LOC_tmp     &=   SYSCLK_CLR;
+    LOC_tmp     |=  SYS_HSI_MASK ;
+    Set_clock_on(CLOCK_HSI);
+    RCC_REG->RCC_CFGR = LOC_tmp;
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_setHSESystemClock(void)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    u32 LOC_tmp = RCC_REG->RCC_CFGR;
+    LOC_tmp     &=   SYSCLK_CLR;
+    LOC_tmp     |=   SYS_HSE_MASK ;
+    Set_clock_on(CLOCK_HSE);
+    RCC_REG->RCC_CFGR = LOC_tmp;
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_setPLLSystemClock(void)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    u32 LOC_tmp = RCC_REG->RCC_CFGR;
+    LOC_tmp     &=   CLOCK_PLL_CLR;
+    LOC_tmp     |=   CLOCK_PLL ;
+    Set_clock_on(CLOCK_PLL);
+    RCC_REG->RCC_CFGR = LOC_tmp;
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_changeSystemClock(u32 clock)
+{   
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+
+    switch (clock)
+    {
+    case CLOCK_HSI:
+        if(RCC_getSystemClocks() == CLOCK_HSI) 
+        {
+            LOC_ERROR = RCC_parameter_error;
+        }
+        else
+        {
+            LOC_ERROR=  RCC_setHSISystemClock();
+        }   
+        break;
+    case CLOCK_HSE:
+        if(RCC_getSystemClocks() == CLOCK_HSE)
+        {
+            LOC_ERROR = RCC_parameter_error;
+        }
+        else
+        {
+            LOC_ERROR = RCC_setHSESystemClock();
+        }
+        break;
+        
+    case CLOCK_PLL:
+    
+         LOC_ERROR = RCC_setPLLSystemClock();
+        
+        break;
+    default:
+        LOC_ERROR = RCC_parameter_error;
+        break;
+    }
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_setHSEOn(void)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    u32 LOC_tmp = RCC_REG->RCC_CR;
+    LOC_tmp     &=   CLOCK_HSE_CLR;
+    LOC_tmp     |=   CLOCK_HSE ;
+    RCC_REG->RCC_CR = LOC_tmp;
+    LOC_ERROR         = TimeOut(CLOCK_HSE);
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_setHSIOn(void)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    u32 LOC_tmp = RCC_REG->RCC_CR;
+    LOC_tmp     &=   CLOCK_HSI_CLR;
+    LOC_tmp     |=   CLOCK_HSI ;
+    RCC_REG->RCC_CR = LOC_tmp;
+    LOC_ERROR         = TimeOut(CLOCK_HSI);
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_setPLLOn(void)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    u32 LOC_tmp = RCC_REG->RCC_CR;
+    LOC_tmp     &=   CLOCK_PLL_CLR;
+    LOC_tmp     |=   CLOCK_PLL;
+    RCC_REG->RCC_CR = LOC_tmp;
+    LOC_ERROR         = TimeOut(CLOCK_PLL);
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_setHSEbypassOn(void)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    u32 LOC_tmp = RCC_REG->RCC_CR;
+    LOC_tmp     &=   CLOCK_HSEBYPASS_CLR;
+    LOC_tmp     |=   CLOCK_HSE_BY_PASS ;
+    RCC_REG->RCC_CFGR = LOC_tmp;
+    LOC_ERROR         = TimeOut(CLOCK_HSE);
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_getHSERDY(void)
+{
+     RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    if((HSE_RDY_MASK & RCC_REG->RCC_CR) == HSE_RDY_MASK)
+        LOC_ERROR = RCC_clockRDY;
+    else
+        LOC_ERROR = RCC_clockNotRDY;
+    
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_getPLLRDY(void)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    if((PLL_RDY_MASK & RCC_REG->RCC_CR) == PLL_RDY_MASK)
+        LOC_ERROR = RCC_clockRDY;
+    else
+        LOC_ERROR = RCC_clockNotRDY;
+    
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_getHSIRDY(void)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    if((HSI_RDY_MASK & RCC_REG->RCC_CR) == HSI_RDY_MASK)
+        LOC_ERROR = RCC_clockRDY;
+    else
+        LOC_ERROR = RCC_clockNotRDY;
+    
+    return LOC_ERROR;
+}
+
+u32 RCC_getSystemClocks(void)
+{
+    u32 LOC_Clock;
+    if((RCC_REG->RCC_CFGR & SYS_CHK) == (SYSCLK_HSE & ~(SYSCLK_CHECK)))
+    {
+        LOC_Clock= CLOCK_HSE;
+    }
+    else if((RCC_REG->RCC_CFGR & SYS_CHK) == (SYSCLK_HSI & ~(SYSCLK_CHECK)))
+    {
+        LOC_Clock= CLOCK_HSI;
+    }
+    else
+    {
+        LOC_Clock= CLOCK_PLL;
+    }
+    return LOC_Clock;
+
+}
+
+RCC_enuErrorStatus_t RCC_PLLConfigurationClock(u32 clock, u32 PLLQ, u32 PLLM, u32 PLLN,u32 PLLP)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    u32 LOC_tmp = RCC_REG->RCC_PLLCFGR;
+    if((PLL_CLOCK_CONFIG_CHECK & PLLQ) != PLL_CLOCK_CONFIG_CHECK ||
+       (PLL_CLOCK_CONFIG_CHECK & PLLM) != PLL_CLOCK_CONFIG_CHECK ||
+       (PLL_CLOCK_CONFIG_CHECK & PLLN) != PLL_CLOCK_CONFIG_CHECK ||
+       (PLL_CLOCK_CONFIG_CHECK & PLLP)!= PLL_CLOCK_CONFIG_CHECK)
+    {
+        LOC_ERROR = RCC_parameter_error;
+    }  
+    else
+    { 
+
+    LOC_tmp     =   ((PLLM_CLOCK_DIVIDE_CLR) |
+                     (PLLN_CLOCK_MULTIP_CLR) |
+                     (PLLP_CLOCK_DIVIDE_CLR) |
+                     (PLLQ_CLOCK_DIVIDE_CLR) ) ;
+    LOC_tmp     =   (PLLM)|(PLLN)| (PLLQ)| (PLLP)|(clock);
+    LOC_ERROR = RCC_OK;
+    }
+    return (LOC_ERROR);
+}
+
+RCC_enuErrorStatus_t RCC_clockSystemSecurity(u32 clockSecurityState)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    u32 LOC_tmp = RCC_REG->RCC_CR;
+    if(clockSecurityState == SECURITY_ENABLE_CLOCK_SYSTEM)
+    {
+        LOC_tmp     |=   (clockSecurityState) ;
+        LOC_ERROR = RCC_OK;
+    }
+    else
+    {
+        LOC_tmp     &=   ~(clockSecurityState) ;
+        LOC_ERROR = RCC_OK;
+    }
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_enableAHB1Peripheral( RCC_AHB1_Peripheral_t Peripheral)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    RCC_REG->RCC_AHB1ENR |= (1<<Peripheral);
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_enableAHB2Peripheral( RCC_AHB2_Peripheral_t Peripheral)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    RCC_REG->RCC_AHB2ENR|= (1<<Peripheral);
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_enableAPB1Peripheral( RCC_APB1_Peripheral_t Peripheral)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    RCC_REG->RCC_APB1ENR |= (1<<Peripheral);
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_enableAPB2Peripheral( RCC_APB2_Peripheral_t Peripheral)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    RCC_REG->RCC_APB2ENR |= (1<<Peripheral);
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_disableAHB1Peripheral( RCC_AHB1_Peripheral_t Peripheral)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    RCC_REG->RCC_APB2ENR &= ~(1<<Peripheral);
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_disableAHB2Peripheral( RCC_AHB2_Peripheral_t Peripheral)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    RCC_REG->RCC_AHB2ENR &= ~(1<<Peripheral);
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_diableAPB1Peripheral( RCC_APB1_Peripheral_t Peripheral)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    RCC_REG->RCC_APB1ENR &= ~(1<<Peripheral);
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_disableAPB2Peripheral( RCC_APB2_Peripheral_t Peripheral)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    RCC_REG->RCC_APB2ENR &= ~(1<<Peripheral);
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_resetAHB1Peripheral( RCC_AHB1_Peripheral_t Peripheral)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    RCC_REG->RCC_AHB1RSTR |= (1<<Peripheral);
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_resetAHB2Peripheral( RCC_AHB2_Peripheral_t Peripheral)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    RCC_REG->RCC_AHB2RSTR |= (1<<Peripheral);
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_resetAPB1Peripheral( RCC_APB1_Peripheral_t Peripheral)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    RCC_REG->RCC_APB1RSTR |= (1<<Peripheral);
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_resetAPB2Peripheral( RCC_APB2_Peripheral_t Peripheral)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    RCC_REG->RCC_APB2RSTR |= (1<<Peripheral);
+    return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_setAPB2Prescaler(u32 prescaler )
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    u32 tmp = RCC_REG->RCC_CFGR ;
+        if((PRESCALER_CLOCK_CHECK & prescaler) == PRESCALER_CLOCK_CHECK)
+        {
+            tmp = PRESCALER_APB2_CLOCK_CLR;
+            tmp = prescaler;
+            RCC_REG->RCC_CFGR = tmp;
+            LOC_ERROR = RCC_OK;
+        }
+        else
+        {
+            LOC_ERROR = RCC_InvalidPreScaler;
+        }
+        return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_setAPB1Prescaler(u32 prescaler )
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    u32 tmp = RCC_REG->RCC_CFGR ;
+        if((PRESCALER_CLOCK_CHECK & prescaler) == PRESCALER_CLOCK_CHECK)
+        {
+            tmp = PRESCALER_APB1_CLOCK_CLR;
+            tmp = prescaler;
+            RCC_REG->RCC_CFGR = tmp;
+            LOC_ERROR = RCC_OK;
+        }
+        else
+        {
+            LOC_ERROR = RCC_InvalidPreScaler;
+        }
+        return LOC_ERROR;
+}
+
+RCC_enuErrorStatus_t RCC_setAHBPrescaler(u32 prescaler )
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_OK;
+    u32 tmp = RCC_REG->RCC_CFGR ;
+        if((PRESCALER_CLOCK_CHECK & prescaler) == PRESCALER_CLOCK_CHECK)
+        {
+            tmp = PRESCALER_AHB_CLOCK_CLR;
+            tmp = prescaler;
+            RCC_REG->RCC_CFGR = tmp;
+            LOC_ERROR = RCC_OK;
+        }
+        else
+        {
+            LOC_ERROR = RCC_InvalidPreScaler;
+        }
+        return LOC_ERROR;
+}
+
+u32 RCC_GETPLLSource(void)
+{
+    u32 LOC_RETSource ;
+    if(GET_BIT(RCC_REG->RCC_PLLCFGR,PLLSRC_BIT))
+        LOC_RETSource = CLOCK_HSE;
+    else
+        LOC_RETSource = CLOCK_HSI;
+
+    return  LOC_RETSource;
+
+}
+
+
+u32 RCC_GetFactor_P(void)
+{
+	u32 LOC_RET;
+    u32 LOC_RES = RCC_REG->RCC_PLLCFGR;
+    LOC_RET = ((LOC_RES >> PLL_Q_SHIFT) & PLL_Q_MASK);
+    return LOC_RET;
+}
+
+u32 RCC_GetFactor_M(void)
+{
+    u32 LOC_RES = RCC_REG->RCC_PLLCFGR;
+    LOC_RES = (LOC_RES & PLL_M_MASK);
+    return LOC_RES;
+}
+
+
+
+u32 RCC_GetFactor_N(void)
+{
+    u32 LOC_RES = RCC_REG->RCC_PLLCFGR;
+    LOC_RES = ((LOC_RES > PLL_N_SHIFT) & PLL_N_MASK);
+    return LOC_RES;   
+}
+
+
+u32 RCC_GETPrescaler(void)
+{
+    u32 LOC_RES = RCC_REG->RCC_CFGR;
+    u32 LOC_RET;
+    
+    LOC_RES = ((LOC_RES & AHB_PRE_MASK) >>AHB_PRE_SHIFT );
+    
+    if(LOC_RES == (PRESCALER_AHB_CLOCK_NOT_DIVIDED & AHB_PRE_MASK))
+    {
+        LOC_RET=  1;
+    }else if(LOC_RES == (PRESCALER_AHB_CLOCK_DIVIDED_BY_2 & AHB_PRE_MASK))
+    {
+        LOC_RET =2;
+    }
+    else if (LOC_RES == (PRESCALER_AHB_CLOCK_DIVIDED_BY_4 & AHB_PRE_MASK))
+    {
+        LOC_RET = 4;
+    }
+    else if (LOC_RES == (PRESCALER_AHB_CLOCK_DIVIDED_BY_8 & AHB_PRE_MASK))
+    {
+        LOC_RET = 8;
+    }
+    else if (LOC_RES == (PRESCALER_AHB_CLOCK_DIVIDED_BY_16 & AHB_PRE_MASK))
+    {
+        LOC_RET = 16;
+    }
+    else if (LOC_RES == (PRESCALER_AHB_CLOCK_DIVIDED_BY_64 & AHB_PRE_MASK))
+    {
+        LOC_RET = 64;
+    }
+    else if (LOC_RES == (PRESCALER_AHB_CLOCK_DIVIDED_BY_128 & AHB_PRE_MASK))
+    {
+        LOC_RET = 128;
+
+    }
+     else if (LOC_RES == (PRESCALER_AHB_CLOCK_DIVIDED_BY_256 & AHB_PRE_MASK))
+    {
+        LOC_RET = 256;
+
+    }
+     else if (LOC_RES == (PRESCALER_AHB_CLOCK_DIVIDED_BY_512 & AHB_PRE_MASK))
+    {
+        LOC_RET = 512;
+
+    }
+    
+    return LOC_RET;
+}
+
+/********************************************** End Of APIs ***********************************************/
+
+
+
+/********************************************** Static Function implementation ****************************/
+/*static u32 Get_system_clock(void)
+{
+    return RCC_getSystemClocks();
+}*/
+
+static void Set_clock_on(u32 clock)
+{
+    switch (clock)
+    {
+    case CLOCK_HSE:
+         RCC_setHSEOn();
+        break;
+    case CLOCK_PLL:
+         RCC_setPLLOn();
+         break;
+    case CLOCK_HSI:
+         RCC_setHSIOn();
+         break;
+    }
+
+}
+
+
+
+static RCC_enuErrorStatus_t TimeOut(u32 clock)
+{
+    RCC_enuErrorStatus_t LOC_ERROR = RCC_clockRDY;
+    u32 LOC_u32TimeOut = 0;
+    switch (clock)
+    {
+    case CLOCK_HSE:
+        while( (( RCC_getHSERDY() ) == RCC_clockNotRDY ) && ( LOC_u32TimeOut < NUMBER_OF_TRILES ) )
+            {
+                 LOC_u32TimeOut++;
+            }
+		    if( LOC_u32TimeOut >= 100000 )
+            {
+                 LOC_ERROR = RCC_TimeOut;
+            }
+            else if(RCC_getHSERDY()!=RCC_clockRDY)
+            {
+                 LOC_ERROR = RCC_clockNotRDY;
+            } 
+        break;
+    case CLOCK_HSI:
+        while( (( RCC_getHSIRDY() ) == RCC_clockNotRDY ) && ( LOC_u32TimeOut < NUMBER_OF_TRILES ) )
+            {
+                 LOC_u32TimeOut++;
+            }
+		    if( LOC_u32TimeOut >= 100000 )
+            {
+                 LOC_ERROR = RCC_TimeOut;
+            }
+            else if(RCC_getHSIRDY()!=RCC_clockRDY)
+            {
+                 LOC_ERROR = RCC_clockNotRDY;
+            }         break;
+    case CLOCK_PLL:
+        while( (( RCC_getPLLRDY() ) == RCC_clockNotRDY ) && ( LOC_u32TimeOut < NUMBER_OF_TRILES ) )
+            {
+                 LOC_u32TimeOut++;
+            }
+		  		    if( LOC_u32TimeOut >= 100000 )
+            {
+                 LOC_ERROR = RCC_TimeOut;
+            }
+            else if(RCC_getPLLRDY()!=RCC_clockRDY)
+            {
+                 LOC_ERROR = RCC_clockNotRDY;
+            }    
+            break;
+    default:
+            LOC_ERROR =RCC_InvalidClockType;
+    
+    }
+    return LOC_ERROR;
+}
+
+/********************************************** End Static Function implementation*************************/

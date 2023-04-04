@@ -1,0 +1,37 @@
+11:16:45 **** Incremental Build of configuration Debug for project Driver ****
+make all 
+'Building file: ../system/src/cortexm/_reset_hardware.c'
+'Invoking: GNU Arm Cross C Compiler'
+arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -mfloat-abi=soft -Og -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -ffreestanding -fno-move-loop-invariants -Wall -Wextra  -g3 -DDEBUG -DUSE_FULL_ASSERT -DTRACE -DOS_USE_TRACE_SEMIHOSTING_DEBUG -DSTM32F401xC -DUSE_HAL_DRIVER -DHSE_VALUE=25000000 -I"../include" -I"../system/include" -I"../system/include/cmsis" -I"../system/include/stm32f4-hal" -std=gnu11 -MMD -MP -MF"system/src/cortexm/_reset_hardware.d" -MT"system/src/cortexm/_reset_hardware.o" -c -o "system/src/cortexm/_reset_hardware.o" "../system/src/cortexm/_reset_hardware.c"
+'Finished building: ../system/src/cortexm/_reset_hardware.c'
+' '
+'Building file: ../system/src/cortexm/exception_handlers.c'
+'Invoking: GNU Arm Cross C Compiler'
+arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -mfloat-abi=soft -Og -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -ffreestanding -fno-move-loop-invariants -Wall -Wextra  -g3 -DDEBUG -DUSE_FULL_ASSERT -DTRACE -DOS_USE_TRACE_SEMIHOSTING_DEBUG -DSTM32F401xC -DUSE_HAL_DRIVER -DHSE_VALUE=25000000 -I"../include" -I"../system/include" -I"../system/include/cmsis" -I"../system/include/stm32f4-hal" -std=gnu11 -MMD -MP -MF"system/src/cortexm/exception_handlers.d" -MT"system/src/cortexm/exception_handlers.o" -c -o "system/src/cortexm/exception_handlers.o" "../system/src/cortexm/exception_handlers.c"
+../system/src/cortexm/exception_handlers.c: In function 'dumpExceptionStack':
+../system/src/cortexm/exception_handlers.c:119:36: error: 'SCB' undeclared (first use in this function)
+   trace_printf (" HFSR =  %08X\n", SCB->HFSR);
+                                    ^
+../system/src/cortexm/exception_handlers.c:119:36: note: each undeclared identifier is reported only once for each function it appears in
+../system/src/cortexm/exception_handlers.c: In function 'HardFault_Handler_C':
+../system/src/cortexm/exception_handlers.c:370:20: error: 'SCB' undeclared (first use in this function)
+   uint32_t mmfar = SCB->MMFAR; // MemManage Fault Address
+                    ^
+../system/src/cortexm/exception_handlers.c:382:21: error: 'SCB_DFSR_BKPT_Msk' undeclared (first use in this function)
+   if (((SCB->DFSR & SCB_DFSR_BKPT_Msk) != 0)
+                     ^
+../system/src/cortexm/exception_handlers.c:383:24: error: 'SCB_HFSR_DEBUGEVT_Msk' undeclared (first use in this function)
+       && ((SCB->HFSR & SCB_HFSR_DEBUGEVT_Msk) != 0))
+                        ^
+../system/src/cortexm/exception_handlers.c: In function 'BusFault_Handler_C':
+../system/src/cortexm/exception_handlers.c:504:20: error: 'SCB' undeclared (first use in this function)
+   uint32_t mmfar = SCB->MMFAR; // MemManage Fault Address
+                    ^
+../system/src/cortexm/exception_handlers.c: In function 'UsageFault_Handler_C':
+../system/src/cortexm/exception_handlers.c:543:20: error: 'SCB' undeclared (first use in this function)
+   uint32_t mmfar = SCB->MMFAR; // MemManage Fault Address
+                    ^
+make: *** [system/src/cortexm/subdir.mk:23: system/src/cortexm/exception_handlers.o] Error 1
+
+11:16:46 Build Finished (took 854ms)
+

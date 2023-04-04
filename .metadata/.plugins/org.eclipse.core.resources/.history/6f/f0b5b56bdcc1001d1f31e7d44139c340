@@ -1,0 +1,15 @@
+/*
+ * CLOCK_H.h
+ *
+ *  Created on: Mar 13, 2023
+ *      Author: samir
+ */
+
+#ifndef CLOCK_H_H_
+#define CLOCK_H_H_
+
+
+void CLOCKH_getSystemClock(void);
+
+
+#endif /* CLOCK_H_H_ */

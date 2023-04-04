@@ -1,0 +1,405 @@
+/*
+ * NVIC.c
+ *
+ *  Created on: Mar 1, 2023
+ *      Author: samir
+ */
+/*====================================================================================================*/
+/******************************************** includes ************************************************/
+/*====================================================================================================*/
+#include "NVIC/NVIC.h"
+
+
+
+/******************************************** End of includes *****************************************/
+/*====================================================================================================*/
+
+
+
+
+
+/*====================================================================================================*/
+/********************************************* defines ************************************************/
+/*====================================================================================================*/
+#define SCS_BASE            (0xE000E000UL)                            /* System Control Space Base Address */
+#define NVIC_BASE           (SCS_BASE +  0x0100UL)                    /* NVIC Base Address                 */
+#define SCB_BASE            (SCS_BASE +  0x0D00UL)                    /* System Control Block Base Address */
+#define NVIC                ((NVIC_t      *)     NVIC_BASE     )      /* NVIC configuration struct         */
+#define SCB                 ((SCB_t       *)     SCB_BASE      )      /* SCB configuration struct          */
+
+#define NVIC_STIR_Pos           0U                                    /* STIR: INTLINESNUM Position */
+#define NVIC_STIR_Msk           (0x1FFUL << NVIC_STIR_INTID_Pos)     /* STIR: INTLINESNUM Mask     */
+
+#define IS_NVIC_PRIORITY_GROUP(GROUP) (((GROUP) == NVIC_PRIORITYGROUP_0) || \
+                                       ((GROUP) == NVIC_PRIORITYGROUP_1) || \
+                                       ((GROUP) == NVIC_PRIORITYGROUP_2) || \
+                                       ((GROUP) == NVIC_PRIORITYGROUP_3) || \
+                                       ((GROUP) == NVIC_PRIORITYGROUP_4))
+
+#define IS_NVIC_PREEMPTION_PRIORITY(PRIORITY)  ((PRIORITY) < 0x10U)
+
+#define IS_NVIC_SUB_PRIORITY(PRIORITY)         ((PRIORITY) < 0x10U)
+
+#define IS_NVIC_DEVICE_IRQ(IRQ)                ((IRQ) >= (IRQn_t)0x00U)
+
+#define SCB_AIRCR_KEY                          ((u32)0x5FAUL) 
+#define SCB_AIRCR_SYSRESETREQ_Pos             2U                                            /* SCB AIRCR: SYSRESETREQ Position */
+#define SCB_AIRCR_SYSRESETREQ_Msk             (1UL << SCB_AIRCR_SYSRESETREQ_Pos)             /* SCB AIRCR: SYSRESETREQ Mask */
+#define SCB_AIRCR_VECTKEY_Pos                  16U                                             /* SCB AIRCR: VECTKEY Position */
+#define SCB_AIRCR_VECTKEY_Msk                  ((u32)(0xFFFFUL << SCB_AIRCR_VECTKEY_Pos))      /* SCB AIRCR: VECTKEY Mask     */
+#define SCB_AIRCR_PRIGROUP_Pos                 8U                                              /* SCB AIRCR: PRIGROUP Position */
+#define SCB_AIRCR_PRIGROUP_Msk                 (7UL << SCB_AIRCR_PRIGROUP_Pos)                 /* SCB AIRCR: PRIGROUP Mask */
+#define POW_NUM_OF_PINs                        5
+#define IRQ_MASK                               (0x1FUL)
+#define PRI_MASK                               ((u32)0xFFUL)
+#define NUMBER_OF_PRI_BITS                     (8U)
+#define EXP_PRI_MASK                           (0xFUL)
+#define NUMBER_OF_EXP_PRI_BITS                 (4UL)
+#define PRI_GROUP_MASK                         ((u32)0x07UL)
+
+//#define CUR_EXCEP_MASK                         
+/********************************************* End Of defines *****************************************/
+/*====================================================================================================*/
+
+
+/*====================================================================================================*/
+/********************************************** types *************************************************/
+/*====================================================================================================*/
+
+/************************ NVIC REG ***************************/
+typedef struct {
+  volatile u32 ISER[8U];               /* Offset: 0x000 (R/W)  Interrupt Set Enable Register           */
+           u32 RESERVED0[24];
+  volatile u32 ICER[8U];               /* Offset: 0x080 (R/W)  Interrupt Clear Enable Register         */
+           u32 RSERVED1[24];
+  volatile u32 ISPR[8U];               /* Offset: 0x200 (R/W)  Interrupt Set Pending Register          */
+           u32 RESERVED2[24];
+  volatile u32 ICPR[8U];               /* Offset: 0x280 (R/W)  Interrupt Clear Pending Register        */
+           u32 RESERVED3[24];
+  volatile u32 IABR[8U];               /* Offset: 0x300 (R/W)  Interrupt Active bit Register           */
+           u32 RESERVED4[56];
+  volatile u8  IP[240U];               /* Offset: 0x400 (R/W)  Interrupt Priority Register (8Bit wide) */
+           u32 RESERVED5[644];
+  volatile u32 STIR;                   /* Offset: 0xF00 ( /W)  Software Trigger Interrupt Register     */
+}NVIC_t;
+
+/************************ SCB REG ***************************/
+typedef struct
+{
+  volatile u32 CPUID;             /* Offset: 0x000 (R/ )  CPUID Base Register                                   */
+  volatile u32 ICSR;              /* Offset: 0x004 (R/W)  Interrupt Control and State Register                  */
+  volatile u32 VTOR;              /* Offset: 0x008 (R/W)  Vector Table Offset Register                          */
+  volatile u32 AIRCR;             /* Offset: 0x00C (R/W)  Application Interrupt and Reset Control Register      */
+  volatile u32 SCR;               /* Offset: 0x010 (R/W)  System Control Register                               */
+  volatile u32 CCR;               /* Offset: 0x014 (R/W)  Configuration Control Register                        */
+  volatile u8  SHP[12];          /* Offset: 0x018 (R/W)  System Handlers Priority Registers (4-7, 8-11, 12-15) */
+  volatile u32 SHCSR;             /* Offset: 0x024 (R/W)  System Handler Control and State Register             */
+  volatile u32 CFSR;              /* Offset: 0x028 (R/W)  Configurable Fault Status Register                    */
+  volatile u32 HFSR;              /* Offset: 0x02C (R/W)  HardFault Status Register                             */
+  volatile u32 DFSR;              /* Offset: 0x030 (R/W)  Debug Fault Status Register                           */
+  volatile u32 MMFAR;             /* Offset: 0x034 (R/W)  MemManage Fault Address Register                      */
+  volatile u32 BFAR;              /* Offset: 0x038 (R/W)  BusFault Address Register                             */
+  volatile u32 AFSR;              /* Offset: 0x03C (R/W)  Auxiliary Fault Status Register                       */
+  volatile u32 PFR[2];     /*   Offset: 0x040 (R/ )  Processor Feature Register                          */
+  volatile u32 DFR;         /*   Offset: 0x048 (R/ )  Debug Feature Register                              */
+  volatile u32 ADR;         /*   Offset: 0x04C (R/ )  Auxiliary Feature Register                          */
+  volatile u32 MMFR[4];    /*   Offset: 0x050 (R/ )  Memory Model Feature Register                       */
+  volatile u32 ISAR[5];    /*   Offset: 0x060 (R/ )  Instruction Set Attributes Register                 */
+           u32 RESERVED0[5];
+  volatile u32 CPACR;             /* Offset: 0x088 (R/W)  Coprocessor Access Control Register                   */
+} SCB_t;
+
+/********************************************* End Of types *******************************************/
+/*====================================================================================================*/
+
+
+
+
+/*====================================================================================================*/
+/********************************************** variables *********************************************/
+/*====================================================================================================*/
+
+
+
+/********************************************** End variables *****************************************/
+/*====================================================================================================*/
+
+
+
+/*====================================================================================================*/
+/*************************************** Static Function Prototypes ***********************************/
+/*====================================================================================================*/
+static u32  NVIC_EncodePriority(u32 PriorityGroup, u32 PreemptPriority, u32 SubPriority);
+static void NVIC_DecodePriority(u32 PriorityGroup, u32 PreemptPriority, u32 SubPriority);
+
+
+/***************************************** End Static Function ***************************************/
+/*====================================================================================================*/
+
+
+
+
+/*====================================================================================================*/
+/************************************* implementation of APIs *****************************************/
+/*====================================================================================================*/
+
+NVIC_enuErrorStatus_t NVIC_EnableIRQ(IRQn_t interruptnum )
+{
+
+    NVIC_enuErrorStatus_t LOC_status = NVIC_OK;
+    if(IS_NVIC_DEVICE_IRQ(interruptnum))
+    {
+    NVIC->ISER[interruptnum >> POW_NUM_OF_PINs] =  (u32)(1UL<<((u32)interruptnum & IRQ_MASK));
+    }
+    else
+    {
+        LOC_status = NVIC_parameter_error;
+    }  
+     return LOC_status;
+
+}
+
+NVIC_enuErrorStatus_t NVIC_DisableIRQ(IRQn_t interruptnum )
+{
+
+    NVIC_enuErrorStatus_t LOC_status = NVIC_OK;
+    if(IS_NVIC_DEVICE_IRQ(interruptnum))
+    {
+    NVIC->ICER[interruptnum >> POW_NUM_OF_PINs] =  (u32)(1UL<<((u32)interruptnum & IRQ_MASK));
+    }
+    else
+    {
+        LOC_status = NVIC_parameter_error;
+    }
+    return LOC_status;
+    
+}
+
+NVIC_enuErrorStatus_t NVIC_SetPendingIRQ(IRQn_t interruptnum )
+{
+    NVIC_enuErrorStatus_t LOC_status = NVIC_OK;
+    if(IS_NVIC_DEVICE_IRQ(interruptnum))
+    {
+    NVIC->ISPR[interruptnum >> POW_NUM_OF_PINs] =  (u32)(1UL<<((u32)interruptnum & IRQ_MASK));
+    }
+    else
+    {
+        LOC_status = NVIC_parameter_error;
+    }
+    return LOC_status;
+}
+
+NVIC_enuErrorStatus_t NVIC_ClearPendingIRQ(IRQn_t interruptnum )
+{
+    NVIC_enuErrorStatus_t LOC_status = NVIC_OK;
+    if(IS_NVIC_DEVICE_IRQ(interruptnum))
+    {
+    NVIC->ICPR[interruptnum >> POW_NUM_OF_PINs] =  (u32)(1UL<<((u32)interruptnum & IRQ_MASK));
+    }
+    else
+    {
+        LOC_status = NVIC_parameter_error;
+    }
+    return LOC_status;
+}
+
+NVIC_enuErrorStatus_t NVIC_GetPendingIRQ(IRQn_t interruptnum, u32* pendingResult )
+{
+    NVIC_enuErrorStatus_t LOC_status = NVIC_OK;
+    if(IS_NVIC_DEVICE_IRQ(interruptnum) && pendingResult != NULL)
+    {
+        *pendingResult = (u32)((NVIC->ISPR[interruptnum >> POW_NUM_OF_PINs]) & (1UL<<((u32)interruptnum & IRQ_MASK)));
+    }
+    else
+    {
+        LOC_status = NVIC_parameter_error;
+    }
+    return LOC_status;
+}
+
+NVIC_enuErrorStatus_t NVIC_GetActive(IRQn_t interruptnum, u32* activeResult )
+{
+    NVIC_enuErrorStatus_t LOC_status = NVIC_OK;
+    if(IS_NVIC_DEVICE_IRQ(interruptnum) && activeResult != NULL)
+    {
+        *activeResult = (u32)((NVIC->IABR[interruptnum >> POW_NUM_OF_PINs]) & (1UL<<((u32)interruptnum & IRQ_MASK)));
+    }
+    else
+    {
+        LOC_status = NVIC_parameter_error;
+    }
+    return LOC_status;
+}
+
+
+NVIC_enuErrorStatus_t NVIC_SetPriorityGrouping(u32 PriorityGroup)
+{
+    NVIC_enuErrorStatus_t LOC_status = NVIC_OK;
+    u32 LOC_priorityValue = (PriorityGroup & PRI_GROUP_MASK);
+    u32 LOC_tmpReg = SCB->AIRCR;
+
+    LOC_tmpReg ~= &(SCB_AIRCR_VECTKEY_Msk | SCB_AIRCR_PRIGROUP_Msk);
+    LOC_tmpReg |= ((SCB_AIRCR_KEY<<SCB_AIRCR_VECTKEY_Pos) | (PriorityGroup << SCB_AIRCR_PRIGROUP_Pos));
+    SCB->AIRCR = LOC_tmpReg;
+
+    return LOC_status;
+}
+
+NVIC_enuErrorStatus_t NVIC_GetPriorityGrouping(u32* PriorityGroup)
+{
+    NVIC_enuErrorStatus_t LOC_status = NVIC_OK;
+    if(PriorityGroup == NULL)
+    {
+        LOC_status = NVIC_NullPointer;
+    }
+    else
+    {
+        *PriorityGroup = ((u32)(SCB->AIRCR & SCB_AIRCR_PRIGROUP_Msk) >> SCB_AIRCR_PRIGROUP_Pos);
+    }
+
+    return LOC_status;
+}
+
+NVIC_enuErrorStatus_t NVIC_SetPriority(IRQn_Type IRQn, u32 priority)
+{
+    NVIC_enuErrorStatus_t LOC_status = NVIC_OK;
+    if ((u32)(IRQn) < 0)
+    {
+      SCB->SHP[(((u32)IRQn) & 0xFUL)-4UL] = (u8)((priority << (NUMBER_OF_PRI_BITS - NVIC_PRIO_BITS)) & PRI_MASK);
+    }
+    else
+    {
+      NVIC->IP[((u32)IRQn)]= (u8)((priority << (NUMBER_OF_PRI_BITS - NVIC_PRIO_BITS)) & (u32)PRI_MASK);
+    }
+    return LOC_status;
+}
+
+NVIC_enuErrorStatus_t NVIC_getPriority(IRQn_t interruptnum ,u32* priority)
+{
+    NVIC_enuErrorStatus_t LOC_status = NVIC_OK;
+    if(priority==NULL)
+    {
+        LOC_status = NVIC_NullPointer;
+    }
+    else
+    {
+        if ((u32)(IRQn_Type) < 0)
+        {
+          *priority= ((u32)SCB->SHP[(((u32)IRQn_Type) & 0xFUL)-4UL] >> ((NUMBER_OF_PRI_BITS - NVIC_PRIO_BITS)));
+        }
+        else
+        {
+          *priority= ((u32)NVIC->IP[((u32)IRQn_Type)] >> ((NUMBER_OF_PRI_BITS - NVIC_PRIO_BITS)));
+        }
+    }
+
+    return LOC_status;
+}
+
+
+NVIC_enuErrorStatus_t NVIC_genSoftWareInterrupt(IRQn_t interruptnum)
+{
+    NVIC_enuErrorStatus_t LOC_status = NVIC_OK;
+    if(!IS_NVIC_DEVICE_IRQ(interruptnum))
+    {
+        LOC_status = NVIC_parameter_error;
+    }
+    else
+    {
+    NVIC->STIR = interruptnum;
+    }
+    return LOC_status;  
+}
+
+
+void NVIC_setPRIMASK(u32 priMask)
+{
+    __asm volatile("MSR primask, %0": : "r"(priMask) : "memory");
+}
+
+void NVIC_getPRIMASK(u32* priMask)
+{   
+    u32 LOC_RES;
+    if(priMask != NULL)
+    {
+    __asm volatile("MRS %0, primask" :  "=r"(LOC_RES));
+    *priMask = LOC_RES;
+    }
+    
+}
+
+void NVIC_enableFaultIRQ(void)
+{
+    __asm volatile("cpsie f" : : : "memory");
+}
+
+void NVIC_disableFaultIRQ(void)
+{
+    __asm volatile("cpsid f" : : : "memory");
+}
+
+void NVIC_setBASEPRI(u32 basePri)
+{
+    __asm("MSR basepri, %0" : : "r" (basePri) : "memory");
+}
+
+void NVIC_getBASEPRI(u32* basePri)
+{
+    u32 LOC_RES;
+    if(basePri != NULL){
+    __asm("MRS %0, basepri" : "=r" (LOC_RES));
+    *basePri = LOC_RES;
+    }
+
+}
+
+
+void NVIC_reallocateVT(u32 VTOR_NEW_ADDR)
+{
+    __DMB();
+    SCB->VTOR = VTOR_NEW_ADDR;
+    __DSB();
+}
+
+void NVIC_SystemReset(void)
+{
+    __DSB(); 
+    SCB->AIRCR  = (u32)((SCB_AIRCR_KEY << SCB_AIRCR_VECTKEY_Pos) |(SCB->AIRCR & SCB_AIRCR_PRIGROUP_Msk) | SCB_AIRCR_SYSRESETREQ_Msk);    
+    __DSB();
+
+    for(;;)                                                           
+    {
+      __NOP();
+    }
+}
+
+void NVIC_enableIRQ(void)
+{
+    __asm volatile ("cpsie i" : : : "memory");
+}
+
+void NVIC_disableIRQ(void)
+{
+    __asm volatile ("cpsid i" : : : "memory");
+}
+
+u32 NVIC_NumberOfImplementedBits()
+{   
+    u32 RES;
+    NVIC->IP[0] =  0xFF;
+    RES = NVIC->IP[0];
+    NVIC->IP[0] =0x00;
+    return RES;
+}
+/****************************************** End Of APIs ***********************************************/
+/*====================================================================================================*/
+
+
+/*====================================================================================================*/
+/************************************* Static Function implementation *********************************/
+/*====================================================================================================*/
+
+
+
+/************************************ End Static Function implementation ******************************/
+/*====================================================================================================*/

@@ -1,0 +1,31 @@
+
+#include "RCC/RCC.h"
+#include "LED.h"
+#include "SYSTICK/SYSTICK.h"
+void ledon(void);
+int
+main(void)
+{
+	RCC_setHSESystemClock();
+	RCC_enableAHB1Peripheral(Peripheral_GPIOA);
+	RCC_enableAHB1Peripheral(Peripheral_GPIOC);
+	LED_init();
+	SYSTICK_init(25);
+	SYSTICK_enableINT();
+	SYSTICK_setCallBackFunc(ledon);
+	SYSTICK_setTick_ms(10);
+	SYSTICK_start();
+
+
+  while (1)
+    {
+
+       // Add your code here.
+
+    }
+}
+
+void ledon()
+{
+	  LED_setState(LED_4,LED_STATUS_ON);
+}

@@ -1,0 +1,29 @@
+/*
+ * CLOCK_H.c
+ *
+ *  Created on: Mar 13, 2023
+ *      Author: samir
+ */
+
+#include "CLOCK_H.h"
+#include "RCC/RCC.h"
+#include "Std_types.h"
+#include "Bit_math.h"
+
+
+
+u32 CLOCKH_getSystemClock_M(void)
+{
+	u32 LOC_clock =RCC_getSystemClocks();
+
+	switch(LOC_clock)
+	{
+	case CLOCK_HSE:
+		break;
+	case CLOCK_HSI:
+		break;
+	case CLOCK_PLL:
+		break;
+
+	}
+}
