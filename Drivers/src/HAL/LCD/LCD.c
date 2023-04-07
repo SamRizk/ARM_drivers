@@ -11,14 +11,14 @@
 /*******************************************************************************************************/
 /******************************************* Macros ****************************************************/
 /******************************************************************************************************/
-#define LCD_OK     			8
-#define Max_Screen_Length   15
-#define Init_1				0
-#define Init_2				1
-#define  NoReq  			0
-#define  Write  			1
-#define  Clear  			2
-#define  GoXY   			3
+#define  LCD_OK     			8
+#define  Max_Screen_Length      15
+#define  Init_1					0
+#define  Init_2					1
+#define  NoReq  				0
+#define  Write  				1
+#define  Clear  				2
+#define  GoXY   				3
 
 
 
@@ -103,7 +103,6 @@ static void LCD_vidSendCommand(u8 cmd)
 
 }
 
-
 static void LCD_voiWriteData(u8 Data)
 {
 	u8 idx;
@@ -117,9 +116,6 @@ static void LCD_voiWriteData(u8 Data)
 	GPIO_setReset(LCD_CFG.pins.RW.GPIO_Port,LCD_CFG.pins.RW.GPIO_Pin,GPIO_LOW);
 	GPIO_setReset(LCD_CFG.pins.Enable.GPIO_Port,LCD_CFG.pins.Enable.GPIO_Pin,GPIO_HIGH);
 }
-
-
-
 
 LCD_status_t LCD_enuSetPosition(u8 Copy_u8Row, u8 Copy_u8Col)
 {
@@ -141,9 +137,6 @@ LCD_status_t LCD_enuSetPosition(u8 Copy_u8Row, u8 Copy_u8Col)
     LCD_vidSendCommand(LOC_u8Address | (1<<7));  // + (128) ,  | (0x80)
 	return status;
 }
-
-
-
 
 LCD_status_t LCD_FunctionInit(void)	
 {
@@ -215,7 +208,6 @@ void LCD_Task(void)
 	}
 }
 
-
 void LCD_ClearReq()
 {
 	Req = Clear;
@@ -237,9 +229,6 @@ static void LCD_WriteSeq()
 		LCD_voiWriteData(requestData.str[requestData.currentPos++]);
 	}
 }
-
-
-
 
 static void LCD_ClearSeq(void)
 {

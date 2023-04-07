@@ -51,7 +51,7 @@ const taskInfo_t TaskInfo[NUM_OF_Runnables]= {
                                                             .name =LCD_APP,
                                                             .period = 2,
                                                             .cbf = LCD_Task,
-                                                            .startDelay =30,
+                                                            .startDelay =30
 
                                                          }
 

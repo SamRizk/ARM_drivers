@@ -46,12 +46,12 @@ typedef enum {
 
 typedef struct 
 {
-     struct
+    struct
     {
         LCD_Mode_t mode;
     }operation;
 
-     struct
+    struct
     {
         GPIO_CFG_t Enable;
         GPIO_CFG_t Data[8];

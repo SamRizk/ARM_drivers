@@ -40,7 +40,7 @@
 typedef struct 
 {
 	taskInfo_t* Task_info;
-   u32 Remain; 
+    u32 Remain; 
 }Task_t;
 
 static Task_t Tasks[NUM_OF_Runnables] ;
@@ -77,7 +77,7 @@ static void tickCbf(void);
 void SCHED_init(void)
 {
     u32 idx;
-    SYSTICK_init(25);
+    SYSTICK_init(16);
     SYSTICK_enableINT();
     SYSTICK_setCallBackFunc(&tickCbf);
     SYSTICK_setTick_ms(TICK_T);
