@@ -26,7 +26,7 @@ const UART_CFG_t UART_COM[UART_COUNT] = {
                                       .Oversampling =0,
                                       .ParityControl =0,
                                       .UART_Channal = UART_6,
-                                      .UartEnable= 0,
+                                      .UartEnable= 1,
                                       .WordLength=0
                                      }                                         
                                         };

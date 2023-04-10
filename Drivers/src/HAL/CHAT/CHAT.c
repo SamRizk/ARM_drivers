@@ -42,12 +42,12 @@ CHAT_Status_t CAHT_Init(void)
     u8 idx;
     for (idx = 0; idx < UART_COUNT; idx++)
     {
-       switch (UART_COM[idx])
+       switch (idx)
        {
        case UART1:
             RCC_enableAHB1Peripheral(Peripheral_GPIOA);
             RCC_enableAPB2Peripheral(Peripheral_USART1);
-            NVIC_enuErrorStatus_t NVIC_EnableIRQ(USART1_IRQn);
+             NVIC_enuEnableIRQ(USART1_IRQ);
             INIT_PINS(UART1);
             status= UART_Init(&UART_COM[UART1]);
         break;
@@ -55,7 +55,7 @@ CHAT_Status_t CAHT_Init(void)
         case UART2:
             RCC_enableAHB1Peripheral(Peripheral_GPIOA);
             RCC_enableAPB1Peripheral(Peripheral_USART2);
-            NVIC_enuErrorStatus_t NVIC_EnableIRQ(USART2_IRQn);
+             NVIC_enuEnableIRQ(USART2_IRQ);
             INIT_PINS(UART2);
             status= UART_Init(&UART_COM[UART2]);
         break;
@@ -63,7 +63,7 @@ CHAT_Status_t CAHT_Init(void)
          case UART6:
          	RCC_enableAHB1Peripheral(Peripheral_GPIOA);
             RCC_enableAPB2Peripheral(Peripheral_USART6);
-            NVIC_enuErrorStatus_t NVIC_EnableIRQ(USART6_IRQn);
+             NVIC_enuEnableIRQ(USART6_IRQ);
             INIT_PINS(UART6);
             status= UART_Init(&UART_COM[UART6]);
         break;
@@ -141,14 +141,14 @@ static void INIT_PINS(u32 stream)
     case UART2:
                 GPIO_setPinDir(PORTA_GPIO,GPIO_PIN2,GPIO_MODE_AF_PP_HS);
 	            GPIO_setPinDir(PORTA_GPIO,GPIO_PIN3,GPIO_MODE_AF_PP_PU_HS);
-	            GPIO_selectAF(GPIO_AF7_USART2,GPIO_PIN10,PORTA_GPIO);
-	            GPIO_selectAF(GPIO_AF7_USART2,GPIO_PIN9,PORTA_GPIO);
+	            GPIO_selectAF(GPIO_AF7_USART2,GPIO_PIN2,PORTA_GPIO);
+	            GPIO_selectAF(GPIO_AF7_USART2,GPIO_PIN3,PORTA_GPIO);
         break;
     case UART6:
                 GPIO_setPinDir(PORTA_GPIO,GPIO_PIN11,GPIO_MODE_AF_PP_HS);
 	            GPIO_setPinDir(PORTA_GPIO,GPIO_PIN12,GPIO_MODE_AF_PP_PU_HS);
-	            GPIO_selectAF(GPIO_AF8_USART6,GPIO_PIN10,PORTA_GPIO);
-	            GPIO_selectAF(GPIO_AF8_USART6,GPIO_PIN9,PORTA_GPIO);
+	            GPIO_selectAF(GPIO_AF8_USART6,GPIO_PIN11,PORTA_GPIO);
+	            GPIO_selectAF(GPIO_AF8_USART6,GPIO_PIN12,PORTA_GPIO);
         break;    
 
     }   

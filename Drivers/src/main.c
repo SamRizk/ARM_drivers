@@ -12,10 +12,10 @@ int
 main(void)
 {
 	//RCC_setHSESystemClock();
-	RCC_enableAHB1Peripheral(Peripheral_GPIOA);
-	RCC_enableAHB1Peripheral(Peripheral_GPIOB);
-	RCC_enableAHB1Peripheral(Peripheral_GPIOC);
-	// SWC_init();
+//	RCC_enableAHB1Peripheral(Peripheral_GPIOA);
+//	RCC_enableAHB1Peripheral(Peripheral_GPIOB);
+//	RCC_enableAHB1Peripheral(Peripheral_GPIOC);
+//	// SWC_init();
 	// LED_init();
 	// LCD_PinInit();
 	// SCHED_init();
@@ -24,7 +24,8 @@ main(void)
 
 
 	pu8 name = "SAMIR";
-	CAHT_send_msg(UART1,name,6,uartcp);
+	CAHT_Init();
+	CAHT_send_msg(UART1,name,5,uartcp);
  while (1)
    {
 

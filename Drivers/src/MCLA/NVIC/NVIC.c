@@ -143,7 +143,7 @@ typedef struct
 /************************************* implementation of APIs *****************************************/
 /*====================================================================================================*/
 
-NVIC_enuErrorStatus_t NVIC_EnableIRQ(IRQn_t interruptnum )
+NVIC_enuErrorStatus_t NVIC_enuEnableIRQ(IRQn_t interruptnum )
 {
 
     NVIC_enuErrorStatus_t LOC_status = NVIC_OK;

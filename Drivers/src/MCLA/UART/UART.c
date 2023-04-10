@@ -95,6 +95,7 @@ Uart_enuStatus_t UART_Init(const UART_CFG_t* copy_pCfg)
     u16	Loc_tmpMantissa;
 	u16 Loc_tmpFraction;
     void* LOC_tmpRegisters;
+    u32 LOC_tmpReg;
     if(copy_pCfg)
     {
         Loc_tmpVal = ((s64)F_CLK * 1000) / (copy_pCfg->BaudRate * (8 * (2 - copy_pCfg->Oversampling )));
@@ -111,12 +112,9 @@ Uart_enuStatus_t UART_Init(const UART_CFG_t* copy_pCfg)
         /*Clear Control register for UART*/
         ((UART_Reg_t*)LOC_tmpRegisters)->CR[0] = 0;
         /*configure the UART*/
-        ((UART_Reg_t*)LOC_tmpRegisters)->CR[0] |= copy_pCfg->Oversampling << 15;
-        ((UART_Reg_t*)LOC_tmpRegisters)->CR[0] |= copy_pCfg->WordLength <<12;
-        ((UART_Reg_t*)LOC_tmpRegisters)->CR[0] |= copy_pCfg->ParityControl<<9;
-
-        /*enable UART*/
-        ((UART_Reg_t*)LOC_tmpRegisters)->CR[0] |= copy_pCfg->UartEnable<<13;
+        LOC_tmpReg = ((UART_Reg_t*)LOC_tmpRegisters)->CR[0];
+        LOC_tmpReg|= (copy_pCfg->Oversampling << 15) | (copy_pCfg->WordLength <<12) | (copy_pCfg->ParityControl<<9) |(copy_pCfg->UartEnable<<13);
+        ((UART_Reg_t*)LOC_tmpRegisters)->CR[0] = LOC_tmpReg;
 
         /*clear the sr register*/
         ((UART_Reg_t*)LOC_tmpRegisters)->SR = 0;
@@ -135,6 +133,7 @@ Uart_enuStatus_t UART_Init(const UART_CFG_t* copy_pCfg)
 Uart_enuStatus_t UART_SendBufferAsynZeroCopy(Uart_Channel_t UartChannel,const pu8 buffer, u32 size)
 {
     Uart_enuStatus_t LOC_Status = Uart_BUSY;
+    u32 LOC_tmpReg;
     void *bufferTmp = (UartChannel == UART1) ? UART_1 : (UartChannel == UART2) ? UART_2 : UART_6;
     if(buffer)
     {
@@ -145,9 +144,10 @@ Uart_enuStatus_t UART_SendBufferAsynZeroCopy(Uart_Channel_t UartChannel,const pu
             user_SendData[UartChannel].UART_Channal = bufferTmp;
             user_SendData[UartChannel].idx = 0;
             UART_TXstate[UartChannel] = Uart_BUSY;
-            ((UART_Reg_t*)user_SendData[UartChannel].UART_Channal)->CR[0] |= TransEnable;
-            ((UART_Reg_t*)user_SendData[UartChannel].UART_Channal)->CR[0] |= TCIE;
-            ((UART_Reg_t*)user_SendData[UartChannel].UART_Channal)->DR = user_SendData[UartChannel].Data[user_SendData[UartChannel].idx];
+            LOC_tmpReg = ((UART_Reg_t*)bufferTmp)->CR[0];
+            LOC_tmpReg |= TransEnable |TCIE   ;
+            ((UART_Reg_t*)bufferTmp)->CR[0] = LOC_tmpReg;
+            ((UART_Reg_t*)bufferTmp)->DR = user_SendData[UartChannel].Data[user_SendData[UartChannel].idx];
             user_SendData[UartChannel].idx++;
             LOC_Status = Uart_Ok;
             
@@ -164,6 +164,7 @@ Uart_enuStatus_t UART_SendBufferAsynZeroCopy(Uart_Channel_t UartChannel,const pu
 Uart_enuStatus_t UART_ReceiveBuffer(Uart_Channel_t UartChannel, pu8 buffer, u32 size)
 {
     Uart_enuStatus_t LOC_Status = Uart_BUSY;
+    u32 LOC_tmpReg;
     void *bufferTmp = (UartChannel == UART1) ? UART_1 : (UartChannel == UART2) ? UART_2 : UART_6;
     if(buffer)
     {
@@ -175,8 +176,9 @@ Uart_enuStatus_t UART_ReceiveBuffer(Uart_Channel_t UartChannel, pu8 buffer, u32 
             user_ReceData[UartChannel].idx = 0;
             UART_RXstate[UartChannel] = Uart_BUSY;
 
-            ((UART_Reg_t*)user_SendData[UartChannel].UART_Channal)->CR[0] |= ReceiveEnable;
-            ((UART_Reg_t*)user_SendData[UartChannel].UART_Channal)->CR[0] |=  RXNEIE;
+            LOC_tmpReg = ((UART_Reg_t*)bufferTmp)->CR[0];
+            LOC_tmpReg |= ReceiveEnable | RXNEIE ;
+            ((UART_Reg_t*)bufferTmp)->CR[0] = LOC_tmpReg;
             ((UART_Reg_t*)user_SendData[UartChannel].UART_Channal)->SR= 0;
 
             LOC_Status = Uart_Ok;

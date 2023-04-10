@@ -97,8 +97,8 @@ typedef enum
   I2C2_ER_IRQn                = 34,     /* I2C2 Error Interrupt                                              */  
   SPI1_IRQn                   = 35,     /* SPI1 global Interrupt                                             */
   SPI2_IRQn                   = 36,     /* SPI2 global Interrupt                                             */
-  USART1_IRQn                 = 37,     /* USART1 global Interrupt                                           */
-  USART2_IRQn                 = 38,     /* USART2 global Interrupt                                           */
+  USART1_IRQ                 = 37,     /* USART1 global Interrupt                                           */
+  USART2_IRQ                 = 38,     /* USART2 global Interrupt                                           */
   EXTI15_10_IRQn              = 40,     /* External Line[15:10] Interrupts                                   */
   RTC_Alarm_IRQn              = 41,     /* RTC Alarm (A and B) through EXTI Line Interrupt                   */
   OTG_FS_WKUP_IRQn            = 42,     /* USB OTG FS Wakeup through EXTI line interrupt                     */  
@@ -115,7 +115,7 @@ typedef enum
   DMA2_Stream5_IRQn           = 68,     /* DMA2 Stream 5 global interrupt                                    */
   DMA2_Stream6_IRQn           = 69,     /* DMA2 Stream 6 global interrupt                                    */
   DMA2_Stream7_IRQn           = 70,     /* DMA2 Stream 7 global interrupt                                    */
-  USART6_IRQn                 = 71,     /* USART6 global interrupt                                           */
+  USART6_IRQ                 = 71,     /* USART6 global interrupt                                           */
   I2C3_EV_IRQn                = 72,     /* I2C3 event interrupt                                              */
   I2C3_ER_IRQn                = 73,     /* I2C3 error interrupt                                              */
   FPU_IRQn                    = 81,     /* FPU global interrupt                                              */
@@ -140,7 +140,7 @@ typedef enum
 /* 	input:       IRQn  External interrupt number. Value cannot be negative.             */
 /* 	return:      NVIC_enuErrorStatus_t                                                  */
 /****************************************************************************************/
-NVIC_enuErrorStatus_t NVIC_EnableIRQ(IRQn_t interruptnum );
+NVIC_enuErrorStatus_t NVIC_enuEnableIRQ(IRQn_t interruptnum );
 
 
 /****************************************************************************************/
