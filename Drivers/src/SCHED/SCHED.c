@@ -77,14 +77,14 @@ static void tickCbf(void);
 void SCHED_init(void)
 {
     u32 idx;
-    SYSTICK_init(16);
+    SYSTICK_init(25);
     SYSTICK_enableINT();
     SYSTICK_setCallBackFunc(&tickCbf);
     SYSTICK_setTick_ms(TICK_T);
     for ( idx = 0; idx < NUM_OF_Runnables; idx++)
     {
         Tasks[idx].Task_info = &TaskInfo[idx];
-        Tasks[idx].Remain = TaskInfo->startDelay;
+        Tasks[idx].Remain = TaskInfo[idx].startDelay;
     }
     
 

@@ -14,6 +14,6 @@ extern void APP3_Runnable(void);
 extern void APP4_Runnable(void);
 extern void SWC_Task(void);
 extern void LCD_Task(void);
-
-
+extern void LCD_Write(void);
+extern void UART_re(void);
 #endif /* APP_H_ */

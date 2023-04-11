@@ -11,12 +11,9 @@
 
 typedef enum 
 {
-    APP1,
-    APP2,
-    APP3,
-	APP4,
-	SWC_APP,
     LCD_APP,
+    LCD_writeString,
+	UART_rec,
     NUM_OF_Runnables
 }runnable_name_t;
 

@@ -32,12 +32,20 @@
 /******************************************************************************************************/
 /******************************************* Types ****************************************************/
 /******************************************************************************************************/
-
+typedef void (*DMA_cbf)(void);
 
 /*********************************************    ENUMS    ********************************************/
 /*                                                                                                    */
 
-
+/*
+It's important to optimize your DMA code for performance and efficiency.
+Here are some tips to consider:
+    Use the DMA channel with the lowest priority to avoid conflicts with other DMA channels.
+    Use DMA double-buffering to minimize data transfer overhead.
+    Use DMA circular mode to continuously transfer data without restarting the transfer.
+    Use DMA interrupts to handle completion and error events.
+    Use DMA burst mode to transfer multiple data words in a single transaction.
+*/
 
 /********************************************* ErrorStatus ********************************************/
 typedef enum
@@ -65,7 +73,8 @@ typedef enum
 	DMA_Stream4 ,
 	DMA_Stream5 ,
 	DMA_Stream6 ,
-	DMA_Stream7 
+	DMA_Stream7,
+    DMA_NumberOfStreams 
 
 }DMA_Stream_t;
 
@@ -83,20 +92,13 @@ typedef enum
     
 }DMA_Channel_t;
 
-typedef struct
+typedef enum
 {
-    struct
-    {
-    	DMA_DIR_PeripheralToMemory,
-    	DMA_DIR_MemoryToPeripheral,
-    }DMA1_Direction_t;
 
-    struct
-    {
+
     	DMA_DIR_PeripheralToMemory,
     	DMA_DIR_MemoryToPeripheral,
     	DMA_DIR_MemoryToMemory
-    }DMA2_Direction_t;
 
 }DMA_Direction_t;
 
@@ -120,7 +122,7 @@ typedef enum
 
 typedef enum
 {
-    DMA_FlowCtrl_Memory,
+    DMA_FlowCtrl_DMA,
     DMA_FlowCtrl_Peripheral
 }DMA_FlowController_t; 
 
@@ -153,14 +155,19 @@ typedef enum
 
 typedef enum
 {
+    linked_to_PSIZE,
+    fixed_to_4
+}PINCOS_t;
+typedef enum
+{
     DMA_MemoryInc_Disable,
     DMA_MemoryInc_Enable
 }DMA_MemoryInc_t;
 typedef enum
 {
-    DMA_FIFOMode_Enable,
-    DMA_FIFOMode_Disable
-}DMA_FIFO_Mode_t;
+    DMA_DirectMode_Enable,
+    DMA_DirectMode_Disable
+}DMA_Direct_Mode_t;
 
 typedef enum
 {
@@ -172,18 +179,30 @@ typedef enum
 
 typedef enum 
 {
-    Direct_ModeError,
+    Direct_ModeError = 1,
     TransferError,
-    Half-transfer,
+    Half_transfer,
     Transfer_Complete,
-    FIFO_overrun_underrun
+    FIFO_overrun_underrun=7
 }DMA_INT_t;
+
+
+typedef enum 
+{
+    FEIFx,
+    DMEIFx,
+    TEIFx,
+    HTIFx,
+    TCIFx
+}interrupt_status_t;
 /*********************************************   CFG Struct    ***************************************/
 typedef struct  
 {
     void* DMA_Peripheral;
-    void* DMA_PeripheralBaseAddr;
-    void* DMA_MemoryBaseAddr; 
+    u32  DMA_PeripheralBaseAddr;
+    u32  DMA_Memory_0_BaseAddr;
+    u32  DMA_Memory_1_BaseAddr;
+    PINCOS_t DMA_PerIncOffSize;
     DMA_Direction_t DMA_DIR ;
     DMA_Channel_t DMA_Channel ;
     DMA_Stream_t DMA_Stream;
@@ -191,18 +210,20 @@ typedef struct
     DMA_MemoryInc_t DMA_MemoryInc ;
     DMA_size_t DMA_PeripheralDataSize;
     DMA_size_t DMA_MemoryDataSize;
-    DMA_Mode_t DMA_Mode;
+    DMA_State_t DMA_DoubleBuffer ;
+    DMA_State_t DMA_CircularMode; 
     DMA_Priority_t DMA_PriorityLevel;
-    DMA_FIFO_Mode_t DMA_FIFOMode;
+    DMA_Direct_Mode_t DMA_DirectMode;
     DMA_FIFO_Threshold_t DMA_FIFOThreshold;
+    DMA_FlowController_t DMA_FlowControl;
     DMA_Burst_t DMA_MemoryBurst;
     DMA_Burst_t DMA_PeripheralBurst;
-    u32 DMA_BufferSize; 
+    u32 DMA_numberOfDataRegister; 
     struct 
     {
         DMA_State_t Direct_ModeError;
 		DMA_State_t TransferError;
-		DMA_State_t Half-transfer;
+		DMA_State_t Half_transfer;
 		DMA_State_t Transfer_Complete;
         DMA_State_t FIFO_overrun_underrun;
     }INT_t;
@@ -213,7 +234,6 @@ typedef struct
 /**********************************************************************************************************/
 /***************************************************END****************************************************/
 /**********************************************************************************************************/
-typedef void (*DMA_Cbf)(void);
 
 /************************************************ APIs ***************************************************/
 /*                                                                                                      */
@@ -236,7 +256,7 @@ extern DMA_ErrorStatus_t DMA_enuInitCFG(const DMA_CFG_t* DMA_InitStruct);
 /* 	input:       dmaID, stream, cbf                                                    */
 /* 	return:      DMA_ErrorStatus_t                                                     */
 /***************************************************************************************/
-extern DMA_ErrorStatus_t DMA_registerCallFunction(DMA_Id_t dma, DMA_Stream_t stream, DMA_Cbf cbf);
+extern DMA_ErrorStatus_t DMA_registerCallFunction(DMA_Id_t dma, DMA_Stream_t stream, DMA_cbf cbf);
 
 /***************************************************************************************/
 /*                                DMA_enuEnableStream     function                     */
@@ -282,7 +302,7 @@ extern DMA_ErrorStatus_t DMA_enuDisableINT(DMA_INT_t INTFlag,DMA_Stream_t stream
 /* 	input:       DMA_Stream_t, INTFlag                                                 */
 /* 	return:      DMA_State_t                                                           */
 /***************************************************************************************/
-extern DMA_State_t DMA_enuGitFlagStatus(DMA_INT_t INTFlag,DMA_Stream_t stream,void* dma);
+extern DMA_ErrorStatus_t DMA_enuGitFlagStatus(DMA_INT_t INTFlag,DMA_Stream_t stream,void* dma,u32* FlagStatus);
 
 /***************************************************************************************/
 /*                                DMA_enuClearFlag            function                 */
@@ -291,7 +311,7 @@ extern DMA_State_t DMA_enuGitFlagStatus(DMA_INT_t INTFlag,DMA_Stream_t stream,vo
 /* 	input:       DMA_Stream_t, INTFlag                                                 */
 /* 	return:      DMA_ErrorStatus_t                                                     */
 /***************************************************************************************/
-extern DMA_ErrorStatus_t DMA_enuClearFlag(DMA_INT_t INTFlag,DMA_Stream_t stream,void* dma);
+extern DMA_ErrorStatus_t DMA_enuClearFlag(interrupt_status_t INTFlag,DMA_Stream_t stream,void* dma);
 
 /***************************************************************************************/
 /*                             DMA_enuSetCurrDataCounter            function           */
@@ -300,7 +320,7 @@ extern DMA_ErrorStatus_t DMA_enuClearFlag(DMA_INT_t INTFlag,DMA_Stream_t stream,
 /* 	input:       DMA_Stream_t, counterSize                                             */
 /* 	return:      DMA_ErrorStatus_t                                                     */
 /***************************************************************************************/
-extern DMA_ErrorStatus_t DMA_enuSetCurrDataCounter(u32 counterSize,DMA_Stream_t stream,void* dma);
+extern DMA_ErrorStatus_t DMA_enuSetCurrDataCounter(u16 counterSize,DMA_Stream_t stream,void* dma);
 
 /***************************************************************************************/
 /*                             DMA_enuGetCurrDataCounter            function           */
@@ -309,7 +329,7 @@ extern DMA_ErrorStatus_t DMA_enuSetCurrDataCounter(u32 counterSize,DMA_Stream_t 
 /* 	input:       DMA_Stream_t,                                                         */
 /* 	return:      u32                                                                   */
 /***************************************************************************************/
-extern u32 DMA_enuGetCurrDataCounter(DMA_Stream_t stream,void* dma);
+extern u16 DMA_enuGetCurrDataCounter(DMA_Stream_t stream,void* dma);
 
 /***************************************************************************************/
 /*                             DMA_enuDoubleBufferModeEnable            function       */
@@ -318,7 +338,7 @@ extern u32 DMA_enuGetCurrDataCounter(DMA_Stream_t stream,void* dma);
 /* 	input:       DMA_Stream_t,secondBufferAdd                                          */
 /* 	return:      DMA_ErrorStatus_t                                                     */
 /***************************************************************************************/
-extern DMA_ErrorStatus_t DMA_enuDoubleBufferModeEnable(DMA_Stream_t stream,void *secondBufferAdd,void* dma);
+extern DMA_ErrorStatus_t DMA_enuDoubleBufferModeEnable(DMA_Stream_t stream,void* dma);
 
 /***************************************************************************************/
 /*                             DMA_enuDoubleBufferModeDisable       function           */
@@ -337,7 +357,7 @@ extern DMA_ErrorStatus_t DMA_enuDoubleBufferModeDisable(DMA_Stream_t stream,void
 /* 	input:       DMA_Stream_t,DMA_PeripheralInc_t, DMA_size_t, voidAdrrTo DMA          */
 /* 	return:      DMA_ErrorStatus_t                                                     */
 /***************************************************************************************/
-extern DMA_ErrorStatus_t DMA_enuPeripheralIncOffsetSizeConfig(DMA_Stream_t stream,void* dma,DMA_PeripheralInc_t incMode, DMA_size_t phSize);
+extern DMA_ErrorStatus_t DMA_enuPeripheralIncOffsetSizeConfig(DMA_Stream_t stream,void* dma,DMA_PeripheralInc_t incMode);
 
 
 /***************************************************************************************/
@@ -348,7 +368,7 @@ extern DMA_ErrorStatus_t DMA_enuPeripheralIncOffsetSizeConfig(DMA_Stream_t strea
 /* 	input:       DMA_Stream_t,DMA_PeripheralInc_t, DMA_size_t, voidAdrrTo DMA          */
 /* 	return:      DMA_ErrorStatus_t                                                     */
 /***************************************************************************************/
-extern DMA_ErrorStatus_t DMA_enuMemoryIncOffsetSizeConfig(DMA_Stream_t stream,void* dma,DMA_PeripheralInc_t incMode, DMA_size_t phSize);
+extern DMA_ErrorStatus_t DMA_enuMemoryIncOffsetSizeConfig(DMA_Stream_t stream,void* dma,DMA_State_t incMode );
 
 /***************************************************************************************/
 /*                             DMA_enuMemoryIncOffsetSizeConfig       function         */
@@ -388,7 +408,7 @@ extern DMA_ErrorStatus_t DMA_enuSetPrioConfig(void* dma, DMA_Stream_t stream, DM
 /* 	input:       DMA_Stream_t,voidADDrTo periph, voidAdrrTo DMA                        */
 /* 	return:      DMA_ErrorStatus_t                                                     */
 /***************************************************************************************/
-extern DMA_ErrorStatus_t DMA_enuSetPeriphAddress(void* dma, DMA_Stream_t stream, void* PeripheralAdd);
+extern DMA_ErrorStatus_t DMA_enuSetPeriphAddress(void* dma, DMA_Stream_t stream, u32 PeripheralAdd);
 
 /***************************************************************************************/
 /*                          DMA_enuSetMemoryAddress       function                     */
@@ -398,7 +418,7 @@ extern DMA_ErrorStatus_t DMA_enuSetPeriphAddress(void* dma, DMA_Stream_t stream,
 /* 	input:       DMA_Stream_t,voidADDrTo memory, voidAdrrTo DMA                        */
 /* 	return:      DMA_ErrorStatus_t                                                     */
 /***************************************************************************************/
-extern DMA_ErrorStatus_t DMA_enuSetMemoryAddress(void* dma, DMA_Stream_t stream, void* memoryAdd);
+extern DMA_ErrorStatus_t DMA_enuSetMemoryAddress(void* dma, DMA_Stream_t stream, u32 memory0Add,u32 memory1Add);
 
 /***************************************************************************************/
 /*                          DMA_enuSetPeriphBurst       function                       */
@@ -410,6 +430,15 @@ extern DMA_ErrorStatus_t DMA_enuSetMemoryAddress(void* dma, DMA_Stream_t stream,
 /***************************************************************************************/
 extern DMA_ErrorStatus_t DMA_enuSetPeriphBurst(void* dma, DMA_Stream_t stream, DMA_Burst_t burstMode);
 
+/***************************************************************************************/
+/*                          DMA_enuSetMemoryBurst       function                       */
+/***************************************************************************************/
+/*  Description: This function sets the burst mode for the Memory                      */ 
+/*               data transfers for the specified DMA stream.                          */
+/* 	input:       DMA_Stream_t,voidADDrTo memory, voidAdrrTo DMA                        */
+/* 	return:      DMA_ErrorStatus_t                                                     */
+/***************************************************************************************/
+extern DMA_ErrorStatus_t DMA_enuSetMemoryBurst(void* dma, DMA_Stream_t stream, DMA_Burst_t burstMode);
 
 
 #endif /* MCLA_DMA_DMA_H_ */

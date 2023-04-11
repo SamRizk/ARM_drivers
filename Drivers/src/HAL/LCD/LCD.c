@@ -92,13 +92,14 @@ static void LCD_vidSendCommand(u8 cmd)
 {
 	u8 idx;
 	GPIO_setReset(LCD_CFG.pins.Enable.GPIO_Port,LCD_CFG.pins.Enable.GPIO_Pin,GPIO_LOW);
+	GPIO_setReset(LCD_CFG.pins.RS.GPIO_Port,LCD_CFG.pins.RS.GPIO_Pin,GPIO_LOW);
+	GPIO_setReset(LCD_CFG.pins.RW.GPIO_Port,LCD_CFG.pins.RW.GPIO_Pin,GPIO_LOW);
 	for ( idx = 0; idx < DataPinCount; idx++)
 	{
 		u8 tmp_cmd = ((cmd>>idx)&1);
 		GPIO_setReset(LCD_CFG.pins.Data[idx].GPIO_Port,LCD_CFG.pins.Data[idx].GPIO_Pin,tmp_cmd);
 	}
-	GPIO_setReset(LCD_CFG.pins.RS.GPIO_Port,LCD_CFG.pins.RS.GPIO_Pin,GPIO_LOW);
-	GPIO_setReset(LCD_CFG.pins.RW.GPIO_Port,LCD_CFG.pins.RW.GPIO_Pin,GPIO_LOW);
+	
 	GPIO_setReset(LCD_CFG.pins.Enable.GPIO_Port,LCD_CFG.pins.Enable.GPIO_Pin,GPIO_HIGH);
 
 }
@@ -107,13 +108,14 @@ static void LCD_voiWriteData(u8 Data)
 {
 	u8 idx;
 	GPIO_setReset(LCD_CFG.pins.Enable.GPIO_Port,LCD_CFG.pins.Enable.GPIO_Pin,GPIO_LOW);
+	GPIO_setReset(LCD_CFG.pins.RS.GPIO_Port,LCD_CFG.pins.RS.GPIO_Pin,GPIO_HIGH);
+	GPIO_setReset(LCD_CFG.pins.RW.GPIO_Port,LCD_CFG.pins.RW.GPIO_Pin,GPIO_LOW);
 	for ( idx = 0; idx < DataPinCount; idx++)
 	{
 		u8 tmp_Data = ((Data>>idx)&1);
 		GPIO_setReset(LCD_CFG.pins.Data[idx].GPIO_Port,LCD_CFG.pins.Data[idx].GPIO_Pin,tmp_Data);
 	}
-	GPIO_setReset(LCD_CFG.pins.RS.GPIO_Port,LCD_CFG.pins.RS.GPIO_Pin,GPIO_HIGH);
-	GPIO_setReset(LCD_CFG.pins.RW.GPIO_Port,LCD_CFG.pins.RW.GPIO_Pin,GPIO_LOW);
+
 	GPIO_setReset(LCD_CFG.pins.Enable.GPIO_Port,LCD_CFG.pins.Enable.GPIO_Pin,GPIO_HIGH);
 }
 
