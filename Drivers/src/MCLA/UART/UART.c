@@ -224,6 +224,23 @@ Uart_enuStatus_t UART_SetRXCallback(Uart_Channel_t uartChannal,CallBack rx_callb
 }
 
 
+Uart_enuStatus_t UART_SendBufferDMA(Uart_Channel_t UartChannel)
+{
+    Uart_enuStatus_t LOC_status = Uart_Ok;
+    void *bufferTmp = (UartChannel == UART1) ? UART_1 : (UartChannel == UART2) ? UART_2 : UART_6;
+    ((UART_Reg_t*)bufferTmp)->CR[3] |= 1<<7;
+    return LOC_status;
+
+}
+
+Uart_enuStatus_t UART_ReceiveBufferDMA(Uart_Channel_t UartChannel)
+{
+    Uart_enuStatus_t LOC_status = Uart_Ok;
+    void *bufferTmp = (UartChannel == UART1) ? UART_1 : (UartChannel == UART2) ? UART_2 : UART_6;
+    ((UART_Reg_t*)bufferTmp)->CR[3] |= 1<<6;
+    return LOC_status;
+}
+
 
 /****************************************** End Of APIs ***********************************************/
 /*====================================================================================================*/
